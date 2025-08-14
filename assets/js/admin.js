@@ -173,5 +173,6 @@
      * Clean up old analytics data
      */
     function cleanupAnalytics() {
+    }
     
 })(jQuery);
