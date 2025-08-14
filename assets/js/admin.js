@@ -61,22 +61,25 @@
      * Load analytics data via AJAX
      */
     function loadAnalyticsData() {
-        $.ajax({
-            url: nexusLinks.ajaxUrl,
-            type: 'POST',
-            data: {
-                action: 'nexus_get_analytics',
-                nonce: nexusLinks.nonce,
-                date_range: '30'
-            },
-            success: function(response) {
-                if (response.success) {
-                    updateDashboardStats(response.data);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Analytics loading error:', error);
+        const formData = new FormData();
+        formData.append('action', 'nexus_get_analytics');
+        formData.append('nonce', nexusLinks.nonce);
+        formData.append('date_range', '30');
+        
+        fetch(nexusLinks.ajaxUrl, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateDashboardStats(data.data);
+            } else {
+                console.error('Analytics loading failed:', data);
             }
+        })
+        .catch(error => {
+            console.error('Analytics loading error:', error);
         });
     }
     
@@ -84,10 +87,16 @@
      * Update dashboard statistics
      */
     function updateDashboardStats(data) {
-        $('#total-clicks').text(data.total_clicks || 0);
-        $('#unique-clicks').text(data.unique_clicks || 0);
-        $('#human-clicks').text(data.human_clicks || 0);
-        $('#bot-clicks').text(data.bot_clicks || 0);
+        // Update stat numbers
+        const totalClicks = document.getElementById('total-clicks');
+        const uniqueClicks = document.getElementById('unique-clicks');
+        const humanClicks = document.getElementById('human-clicks');
+        const botClicks = document.getElementById('bot-clicks');
+        
+        if (totalClicks) totalClicks.textContent = data.total_clicks || 0;
+        if (uniqueClicks) uniqueClicks.textContent = data.unique_clicks || 0;
+        if (humanClicks) humanClicks.textContent = data.human_clicks || 0;
+        if (botClicks) botClicks.textContent = data.bot_clicks || 0;
         
         updateReferrersList(data.top_referrers);
         updateClicksChart(data.clicks_by_day);
@@ -97,22 +106,24 @@
      * Update referrers list
      */
     function updateReferrersList(referrers) {
-        const container = $('#referrers-list');
-        container.empty();
+        const container = document.getElementById('referrers-list');
+        if (!container) return;
+        
+        container.innerHTML = '';
         
         if (referrers && referrers.length > 0) {
-            const list = $('<ul></ul>');
+            const list = document.createElement('ul');
             referrers.forEach(function(referrer) {
                 const domain = extractDomain(referrer.referrer);
-                const item = $('<li></li>').html(
+                const item = document.createElement('li');
+                item.innerHTML = 
                     '<span><strong>' + domain + '</strong></span>' +
-                    '<span>' + referrer.clicks + ' clicks</span>'
-                );
-                list.append(item);
+                    '<span>' + referrer.clicks + ' clicks</span>';
+                list.appendChild(item);
             });
-            container.append(list);
+            container.appendChild(list);
         } else {
-            container.html('<p>No referrer data available.</p>');
+            container.innerHTML = '<p>No referrer data available.</p>';
         }
     }
     
@@ -122,6 +133,51 @@
     function updateClicksChart(clicksData) {
         // This would integrate with Chart.js or similar library
         console.log('Clicks data:', clicksData);
+    }
+    
+    /**
+     * Extract domain from URL
+     */
+    function extractDomain(url) {
+        try {
+            const domain = new URL(url).hostname;
+            return domain.replace('www.', '');
+        } catch (e) {
+            return url;
+        }
+    }
+    
+    /**
+     * Clean up old analytics data
+     */
+    function cleanupAnalytics() {
+        const formData = new FormData();
+        formData.append('action', 'nexus_cleanup_analytics');
+        formData.append('nonce', nexusLinks.nonce);
+        
+        fetch(nexusLinks.ajaxUrl, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(nexusLinks.strings.cleanup_success || 'Analytics data cleanup completed successfully.');
+            } else {
+                alert(nexusLinks.strings.error || 'Error occurred during cleanup.');
+            }
+        })
+        .catch(error => {
+            console.error('Cleanup error:', error);
+            alert(nexusLinks.strings.error || 'Error occurred during cleanup.');
+        });
+    }
+    
+    /**
+     * Export data
+     */
+    function exportData() {
+        window.location.href = nexusLinks.ajaxUrl + '?action=nexus_export_data&nonce=' + nexusLinks.nonce;
     }
     
     /**
@@ -155,24 +211,6 @@
         }
         
         document.body.removeChild(textArea);
-    }
-    
-    /**
-     * Extract domain from URL
-     */
-    function extractDomain(url) {
-        try {
-            const domain = new URL(url).hostname;
-            return domain.replace('www.', '');
-        } catch (e) {
-            return url;
-        }
-    }
-    
-    /**
-     * Clean up old analytics data
-     */
-    function cleanupAnalytics() {
     }
     
 })(jQuery);
