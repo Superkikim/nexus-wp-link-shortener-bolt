@@ -173,31 +173,5 @@
      * Clean up old analytics data
      */
     function cleanupAnalytics() {
-        $.ajax({
-            url: nexusLinks.ajaxUrl,
-            type: 'POST',
-            data: {
-                action: 'nexus_cleanup_analytics',
-                nonce: nexusLinks.nonce
-            },
-            success: function(response) {
-                if (response.success) {
-                    alert('Analytics data cleanup completed successfully.');
-                } else {
-                    alert('Error occurred during cleanup.');
-                }
-            },
-            error: function() {
-                alert('Error occurred during cleanup.');
-            }
-        });
-    }
-    
-    /**
-     * Export data
-     */
-    function exportData() {
-        window.location.href = nexusLinks.ajaxUrl + '?action=nexus_export_data&nonce=' + nexusLinks.nonce;
-    }
     
 })(jQuery);

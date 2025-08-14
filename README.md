@@ -37,6 +37,28 @@ Nexus WP Link Shortener provides a complete link shortening solution built entir
 1. Upload the plugin files to `/wp-content/plugins/nexus-wp-link-shortener/`
 2. Activate the plugin through the 'Plugins' screen in WordPress
 3. Navigate to 'Short Links' in the admin menu to start creating links
+4. Configure settings under 'Short Links' > 'Settings' as needed
+
+## Quick Start Guide
+
+### Creating Your First Short Link
+
+1. **Navigate to Content**: Go to 'Short Links' > 'Posts' (or 'Pages')
+2. **Instant Creation**: Click "Instant Create + Copy" next to any post
+3. **Share**: The short link is automatically copied to your clipboard
+
+### Managing Links
+
+1. **View Links**: Click "Manage Links" for posts with existing short links
+2. **Edit Details**: Modify names, campaigns, descriptions, and redirect settings
+3. **Monitor Performance**: View click statistics and analytics
+
+### Analytics Dashboard
+
+- **Real-time Stats**: View total clicks, unique visitors, and bot detection
+- **Referrer Analysis**: See where your traffic is coming from
+- **Device Breakdown**: Monitor desktop vs mobile usage
+- **Time-based Analytics**: Track performance over time
 
 ## Usage
 

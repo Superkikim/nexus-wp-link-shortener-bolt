@@ -8,7 +8,9 @@ class Nexus_Links_Admin {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         add_action('wp_ajax_nexus_create_instant_link', array($this, 'ajax_create_instant_link'));
-        add_action('wp_ajax_nexus_copy_to_clipboard', array($this, 'ajax_copy_to_clipboard'));
+        add_action('wp_ajax_nexus_get_analytics', array($this, 'ajax_get_analytics'));
+        add_action('wp_ajax_nexus_cleanup_analytics', array($this, 'ajax_cleanup_analytics'));
+        add_action('wp_ajax_nexus_export_data', array($this, 'ajax_export_data'));
     }
     
     /**
@@ -428,4 +430,5 @@ class Nexus_Links_Admin {
                 echo '<div class="notice notice-error is-dismissible"><p>' . __('Failed to delete link.', 'nexus-wp-link-shortener') . '</p></div>';
             });
         }
+    }
 }

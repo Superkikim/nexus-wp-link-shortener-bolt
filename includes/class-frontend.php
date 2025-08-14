@@ -36,7 +36,8 @@ class Nexus_Links_Frontend {
         $link = Nexus_Links_Database::get_link_by_slug($slug);
         
         if (!$link) {
-            wp_redirect(home_url(), 404);
+            status_header(404);
+            wp_redirect(home_url());
             exit;
         }
         

@@ -112,4 +112,19 @@ class Nexus_WP_Link_Shortener {
             }
         }
     }
+    
+    /**
+     * Scheduled cleanup of old analytics data
+     */
+    public function scheduled_cleanup() {
+        global $wpdb;
+        
+        $retention_months = get_option('nexus_links_retention_period', 13);
+        $clicks_table = $wpdb->prefix . 'nexus_clicks';
+        
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM $clicks_table WHERE timestamp < DATE_SUB(NOW(), INTERVAL %d MONTH)",
+            $retention_months
+        ));
+    }
 }

@@ -92,5 +92,34 @@
         <button type="button" class="button" id="export-data">
             <?php _e('Export Data', 'nexus-wp-link-shortener'); ?>
         </button>
+        
+        <h3><?php _e('Plugin Status', 'nexus-wp-link-shortener'); ?></h3>
+        <?php
+        global $wpdb;
+        $links_table = $wpdb->prefix . 'nexus_links';
+        $clicks_table = $wpdb->prefix . 'nexus_clicks';
+        
+        $total_links = $wpdb->get_var("SELECT COUNT(*) FROM $links_table");
+        $total_clicks = $wpdb->get_var("SELECT COUNT(*) FROM $clicks_table");
+        $active_links = $wpdb->get_var("SELECT COUNT(*) FROM $links_table WHERE active = 1");
+        ?>
+        <table class="form-table">
+            <tr>
+                <th><?php _e('Total Links', 'nexus-wp-link-shortener'); ?></th>
+                <td><?php echo intval($total_links); ?></td>
+            </tr>
+            <tr>
+                <th><?php _e('Active Links', 'nexus-wp-link-shortener'); ?></th>
+                <td><?php echo intval($active_links); ?></td>
+            </tr>
+            <tr>
+                <th><?php _e('Total Clicks', 'nexus-wp-link-shortener'); ?></th>
+                <td><?php echo intval($total_clicks); ?></td>
+            </tr>
+            <tr>
+                <th><?php _e('Database Version', 'nexus-wp-link-shortener'); ?></th>
+                <td><?php echo get_option('nexus_links_db_version', 'Not set'); ?></td>
+            </tr>
+        </table>
     </div>
 </div>

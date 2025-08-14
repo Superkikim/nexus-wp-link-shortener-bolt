@@ -301,13 +301,34 @@ class Nexus_Links_Analytics {
             LIMIT 30
         ");
         
+        // Device breakdown
+        $device_breakdown = $wpdb->get_results("
+            SELECT device, COUNT(*) as clicks
+            FROM $clicks_table c
+            WHERE device IS NOT NULL $where_date
+            GROUP BY device
+            ORDER BY clicks DESC
+        ");
+        
+        // Browser breakdown
+        $browser_breakdown = $wpdb->get_results("
+            SELECT browser, COUNT(*) as clicks
+            FROM $clicks_table c
+            WHERE browser IS NOT NULL $where_date
+            GROUP BY browser
+            ORDER BY clicks DESC
+            LIMIT 10
+        ");
+        
         return array(
             'total_clicks' => $total_clicks,
             'unique_clicks' => $unique_clicks,
             'bot_clicks' => $bot_clicks,
             'human_clicks' => $total_clicks - $bot_clicks,
             'top_referrers' => $top_referrers,
-            'clicks_by_day' => $clicks_by_day
+            'clicks_by_day' => $clicks_by_day,
+            'device_breakdown' => $device_breakdown,
+            'browser_breakdown' => $browser_breakdown
         );
     }
 }

@@ -72,6 +72,11 @@ class Nexus_Links_Database {
         
         // Update database version
         update_option('nexus_links_db_version', NEXUS_LINKS_VERSION);
+        
+        // Schedule cleanup event
+        if (!wp_next_scheduled('nexus_links_cleanup_analytics')) {
+            wp_schedule_event(time(), 'daily', 'nexus_links_cleanup_analytics');
+        }
     }
     
     /**
