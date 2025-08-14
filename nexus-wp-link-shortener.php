@@ -33,6 +33,9 @@ register_deactivation_hook(__FILE__, array('Nexus_WP_Link_Shortener', 'deactivat
 // Load the main plugin class
 require_once NEXUS_LINKS_PLUGIN_DIR . 'includes/class-nexus-wp-link-shortener.php';
 
+// Load database class for activation hook
+require_once NEXUS_LINKS_PLUGIN_DIR . 'includes/class-database.php';
+
 // Initialize the plugin
 function nexus_wp_link_shortener_init() {
     new Nexus_WP_Link_Shortener();
