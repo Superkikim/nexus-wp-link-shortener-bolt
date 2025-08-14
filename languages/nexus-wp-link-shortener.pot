@@ -1,0 +1,78 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Nexus WP Link Shortener 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: nexus-wp-link-shortener.php
+msgid "A 100% internal WordPress link shortener with comprehensive analytics and no external dependencies."
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Link Shortener"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Short Links"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Dashboard"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Pages"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Posts"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Settings"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "You do not have sufficient permissions to access this page."
+msgstr ""
+
+#: templates/admin-dashboard.php
+msgid "Link Shortener Dashboard"
+msgstr ""
+
+#: templates/admin-dashboard.php
+msgid "Total Clicks"
+msgstr ""
+
+#: templates/admin-dashboard.php
+msgid "Unique Visitors"
+msgstr ""
+
+#: templates/admin-dashboard.php
+msgid "Human Clicks"
+msgstr ""
+
+#: templates/admin-dashboard.php
+msgid "Bot Clicks"
+msgstr ""
+
+#: templates/admin-dashboard.php
+msgid "Clicks Over Time"
+msgstr ""
+
+#: templates/admin-dashboard.php
+msgid "Top Referrers"
+msgstr ""

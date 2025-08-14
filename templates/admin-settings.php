@@ -1,0 +1,96 @@
+<div class="wrap">
+    <h1><?php _e('Link Shortener Settings', 'nexus-wp-link-shortener'); ?></h1>
+    
+    <form method="post" action="">
+        <?php wp_nonce_field('nexus_links_save_settings', 'nexus_links_settings_nonce'); ?>
+        
+        <table class="form-table">
+            <tr>
+                <th scope="row"><?php _e('Analytics Retention Period', 'nexus-wp-link-shortener'); ?></th>
+                <td>
+                    <select name="retention_period">
+                        <option value="3" <?php selected(get_option('nexus_links_retention_period', 13), 3); ?>>3 months</option>
+                        <option value="6" <?php selected(get_option('nexus_links_retention_period', 13), 6); ?>>6 months</option>
+                        <option value="12" <?php selected(get_option('nexus_links_retention_period', 13), 12); ?>>12 months</option>
+                        <option value="13" <?php selected(get_option('nexus_links_retention_period', 13), 13); ?>>13 months (GDPR default)</option>
+                        <option value="24" <?php selected(get_option('nexus_links_retention_period', 13), 24); ?>>24 months</option>
+                        <option value="36" <?php selected(get_option('nexus_links_retention_period', 13), 36); ?>>36 months</option>
+                    </select>
+                    <p class="description"><?php _e('How long to keep click analytics data.', 'nexus-wp-link-shortener'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('UTM Parameter Forwarding', 'nexus-wp-link-shortener'); ?></th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="forward_utm_params" value="1" <?php checked(get_option('nexus_links_forward_utm_params', false)); ?>>
+                        <?php _e('Forward UTM parameters from short link to destination URL', 'nexus-wp-link-shortener'); ?>
+                    </label>
+                    <p class="description">
+                        <?php _e('⚠️ <strong>Privacy Notice:</strong> When enabled, UTM parameters (utm_source, utm_medium, etc.) will be forwarded from the short link to the destination URL. This may expose tracking information to the destination site.', 'nexus-wp-link-shortener'); ?>
+                    </p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('Analytics', 'nexus-wp-link-shortener'); ?></th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="analytics_enabled" value="1" <?php checked(get_option('nexus_links_analytics_enabled', true)); ?>>
+                        <?php _e('Enable click analytics tracking', 'nexus-wp-link-shortener'); ?>
+                    </label>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('Bot Detection', 'nexus-wp-link-shortener'); ?></th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="bot_detection_enabled" value="1" <?php checked(get_option('nexus_links_bot_detection_enabled', true)); ?>>
+                        <?php _e('Enable bot detection and filtering', 'nexus-wp-link-shortener'); ?>
+                    </label>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('User Permissions', 'nexus-wp-link-shortener'); ?></th>
+                <td>
+                    <?php
+                    $roles = wp_roles()->get_names();
+                    $allowed_roles = get_option('nexus_links_allowed_roles', array('administrator', 'editor'));
+                    
+                    foreach ($roles as $role_key => $role_name):
+                    ?>
+                    <label>
+                        <input type="checkbox" name="allowed_roles[]" value="<?php echo esc_attr($role_key); ?>" 
+                               <?php checked(in_array($role_key, $allowed_roles)); ?>>
+                        <?php echo esc_html($role_name); ?>
+                    </label><br>
+                    <?php endforeach; ?>
+                    <p class="description"><?php _e('Select which user roles can create and manage short links.', 'nexus-wp-link-shortener'); ?></p>
+                </td>
+            </tr>
+        </table>
+        
+        <?php submit_button(); ?>
+    </form>
+    
+    <hr>
+    
+    <h2><?php _e('Data Management', 'nexus-wp-link-shortener'); ?></h2>
+    
+    <div class="nexus-data-management">
+        <h3><?php _e('Analytics Cleanup', 'nexus-wp-link-shortener'); ?></h3>
+        <p><?php _e('Remove analytics data older than the retention period.', 'nexus-wp-link-shortener'); ?></p>
+        <button type="button" class="button" id="cleanup-analytics">
+            <?php _e('Clean Up Old Analytics', 'nexus-wp-link-shortener'); ?>
+        </button>
+        
+        <h3><?php _e('Export Data', 'nexus-wp-link-shortener'); ?></h3>
+        <p><?php _e('Export all links and analytics data for backup or migration purposes.', 'nexus-wp-link-shortener'); ?></p>
+        <button type="button" class="button" id="export-data">
+            <?php _e('Export Data', 'nexus-wp-link-shortener'); ?>
+        </button>
+    </div>
+</div>

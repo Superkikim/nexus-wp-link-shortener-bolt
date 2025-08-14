@@ -1,0 +1,40 @@
+# WordPress
+wp-config.php
+wp-content/uploads/
+wp-content/cache/
+wp-content/upgrade/
+
+# Plugin development
+node_modules/
+.sass-cache/
+*.css.map
+*.js.map
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# Composer
+vendor/
+composer.lock
+
+# NPM/Yarn
+package-lock.json
+yarn.lock
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Build files
+dist/
+build/
