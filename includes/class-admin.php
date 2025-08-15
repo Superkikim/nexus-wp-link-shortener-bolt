@@ -11,6 +11,8 @@ class Nexus_Links_Admin {
         add_action('wp_ajax_nexus_get_analytics', array($this, 'ajax_get_analytics'));
         add_action('wp_ajax_nexus_cleanup_analytics', array($this, 'ajax_cleanup_analytics'));
         add_action('wp_ajax_nexus_export_data', array($this, 'ajax_export_data'));
+        add_action('admin_post_nexus_delete_link', array($this, 'handle_delete_link'));
+        add_action('admin_notices', array($this, 'display_admin_notices'));
     }
     
     /**
@@ -89,6 +91,16 @@ class Nexus_Links_Admin {
             $capability,
             'nexus-links-manage',
             array($this, 'manage_links_page')
+        );
+        
+        // Hidden add/edit link page
+        add_submenu_page(
+            null, // Hidden from menu
+            __('Add/Edit Link', 'nexus-wp-link-shortener'),
+            __('Add/Edit Link', 'nexus-wp-link-shortener'),
+            $capability,
+            'nexus-links-add-edit',
+            array($this, 'add_edit_link_page')
         );
     }
     
@@ -266,6 +278,76 @@ class Nexus_Links_Admin {
     }
     
     /**
+     * AJAX handler for getting analytics data
+     */
+    public function ajax_get_analytics() {
+        if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
+            wp_die('Security check failed');
+        }
+        
+        if (!current_user_can('edit_posts')) {
+            wp_die('Insufficient permissions');
+        }
+        
+        $date_range = isset($_POST['date_range']) ? sanitize_text_field($_POST['date_range']) : '30';
+        
+        $analytics = new Nexus_Links_Analytics();
+        $data = $analytics->get_dashboard_data($date_range);
+        
+        wp_send_json_success($data);
+    }
+    
+    /**
+     * AJAX handler for analytics cleanup
+     */
+    public function ajax_cleanup_analytics() {
+        if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
+            wp_die('Security check failed');
+        }
+        
+        if (!current_user_can('manage_options')) {
+            wp_die('Insufficient permissions');
+        }
+        
+        $plugin = Nexus_WP_Link_Shortener::get_instance();
+        $plugin->scheduled_cleanup();
+        
+        wp_send_json_success(array('message' => __('Analytics cleanup completed successfully.', 'nexus-wp-link-shortener')));
+    }
+    
+    /**
+     * AJAX handler for data export
+     */
+    public function ajax_export_data() {
+        if (!wp_verify_nonce($_GET['nonce'], 'nexus_links_nonce')) {
+            wp_die('Security check failed');
+        }
+        
+        if (!current_user_can('manage_options')) {
+            wp_die('Insufficient permissions');
+        }
+        
+        global $wpdb;
+        
+        $links_table = $wpdb->prefix . 'nexus_links';
+        $clicks_table = $wpdb->prefix . 'nexus_clicks';
+        
+        $links = $wpdb->get_results("SELECT * FROM $links_table ORDER BY created_at DESC");
+        $clicks = $wpdb->get_results("SELECT * FROM $clicks_table ORDER BY timestamp DESC");
+        
+        $export_data = array(
+            'export_date' => current_time('mysql'),
+            'links' => $links,
+            'clicks' => $clicks
+        );
+        
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="nexus-links-export-' . date('Y-m-d') . '.json"');
+        echo json_encode($export_data, JSON_PRETTY_PRINT);
+        exit;
+    }
+    
+    /**
      * Save settings
      */
     private function save_settings() {
@@ -310,14 +392,108 @@ class Nexus_Links_Admin {
             wp_die(__('Post not found.', 'nexus-wp-link-shortener'));
         }
         
-        // Handle form submissions
-        if (isset($_POST['action'])) {
-            $this->handle_manage_links_actions($post_id, $post_type);
-        }
-        
         $links = Nexus_Links_Database::get_links_by_post($post_id, $post_type);
+        $source_page = $this->get_source_page_info($post_type);
         
         require_once NEXUS_LINKS_PLUGIN_DIR . 'templates/admin-manage-links.php';
+    }
+    
+    /**
+     * Add/Edit link page
+     */
+    public function add_edit_link_page() {
+        if (!current_user_can('edit_posts')) {
+            wp_die(__('You do not have sufficient permissions to access this page.'));
+        }
+        
+        $post_id = isset($_GET['post_id']) ? intval($_GET['post_id']) : 0;
+        $post_type = isset($_GET['post_type']) ? sanitize_text_field($_GET['post_type']) : 'post';
+        $link_id = isset($_GET['link_id']) ? intval($_GET['link_id']) : 0;
+        $action = $link_id ? 'edit' : 'add';
+        
+        if (!$post_id) {
+            wp_die(__('Invalid post ID.', 'nexus-wp-link-shortener'));
+        }
+        
+        $post = get_post($post_id);
+        if (!$post) {
+            wp_die(__('Post not found.', 'nexus-wp-link-shortener'));
+        }
+        
+        $link = null;
+        if ($link_id) {
+            global $wpdb;
+            $table = $wpdb->prefix . 'nexus_links';
+            $link = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table WHERE id = %d AND post_id = %d",
+                $link_id, $post_id
+            ));
+            
+            if (!$link) {
+                wp_die(__('Link not found.', 'nexus-wp-link-shortener'));
+            }
+            
+            if (!Nexus_Links_Permissions::can_edit_link($link_id)) {
+                wp_die(__('You cannot edit this link.', 'nexus-wp-link-shortener'));
+            }
+        }
+        
+        // Handle form submissions
+        if (isset($_POST['action'])) {
+            $this->handle_add_edit_form_submission($post_id, $post_type, $link_id);
+        }
+        
+        require_once NEXUS_LINKS_PLUGIN_DIR . 'templates/admin-add-edit-link.php';
+    }
+    
+    /**
+     * Get source page information for breadcrumb
+     */
+    private function get_source_page_info($post_type) {
+        $post_type_object = get_post_type_object($post_type);
+        
+        $page_mapping = array(
+            'post' => array(
+                'title' => __('Posts', 'nexus-wp-link-shortener'),
+                'url' => admin_url('admin.php?page=nexus-links-posts')
+            ),
+            'page' => array(
+                'title' => __('Pages', 'nexus-wp-link-shortener'),
+                'url' => admin_url('admin.php?page=nexus-links-pages')
+            )
+        );
+        
+        if (isset($page_mapping[$post_type])) {
+            return $page_mapping[$post_type];
+        }
+        
+        // For custom post types
+        return array(
+            'title' => $post_type_object ? $post_type_object->labels->name : ucfirst($post_type),
+            'url' => admin_url('admin.php?page=nexus-links-' . $post_type)
+        );
+    }
+    
+    /**
+     * Handle add/edit form submission
+     */
+    private function handle_add_edit_form_submission($post_id, $post_type, $link_id = 0) {
+        if (!wp_verify_nonce($_POST['nexus_links_nonce'], 'nexus_links_add_edit')) {
+            return;
+        }
+        
+        $action = sanitize_text_field($_POST['action']);
+        
+        if ($action === 'create_link') {
+            $this->create_new_link($post_id, $post_type);
+        } elseif ($action === 'update_link' && $link_id) {
+            $this->update_existing_link($link_id);
+        }
+        
+        // Redirect back to manage links page
+        $redirect_url = admin_url('admin.php?page=nexus-links-manage&post_id=' . $post_id . '&post_type=' . $post_type);
+        wp_redirect($redirect_url);
+        exit;
     }
     
     /**
@@ -361,26 +537,19 @@ class Nexus_Links_Admin {
         $result = Nexus_Links_Database::create_link($link_data);
         
         if ($result) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-success is-dismissible"><p>' . __('Link created successfully!', 'nexus-wp-link-shortener') . '</p></div>';
-            });
+            $this->add_admin_notice(__('Link created successfully!', 'nexus-wp-link-shortener'), 'success');
         } else {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' . __('Failed to create link.', 'nexus-wp-link-shortener') . '</p></div>';
-            });
+            $this->add_admin_notice(__('Failed to create link.', 'nexus-wp-link-shortener'), 'error');
         }
     }
     
     /**
      * Update existing link
      */
-    private function update_existing_link() {
-        $link_id = intval($_POST['link_id']);
+    private function update_existing_link($link_id) {
         
         if (!Nexus_Links_Permissions::can_edit_link($link_id)) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' . __('You cannot edit this link.', 'nexus-wp-link-shortener') . '</p></div>';
-            });
+            $this->add_admin_notice(__('You cannot edit this link.', 'nexus-wp-link-shortener'), 'error');
             return;
         }
         
@@ -396,39 +565,64 @@ class Nexus_Links_Admin {
         $result = Nexus_Links_Database::update_link($link_id, $data);
         
         if ($result !== false) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-success is-dismissible"><p>' . __('Link updated successfully!', 'nexus-wp-link-shortener') . '</p></div>';
-            });
+            $this->add_admin_notice(__('Link updated successfully!', 'nexus-wp-link-shortener'), 'success');
         } else {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' . __('Failed to update link.', 'nexus-wp-link-shortener') . '</p></div>';
-            });
+            $this->add_admin_notice(__('Failed to update link.', 'nexus-wp-link-shortener'), 'error');
         }
     }
     
     /**
      * Delete existing link
      */
-    private function delete_existing_link() {
+    public function handle_delete_link() {
+        if (!wp_verify_nonce($_POST['nexus_links_nonce'], 'nexus_links_delete')) {
+            wp_die('Security check failed');
+        }
+        
+        if (!current_user_can('edit_posts')) {
+            wp_die('Insufficient permissions');
+        }
+        
         $link_id = intval($_POST['link_id']);
+        $post_id = intval($_POST['post_id']);
+        $post_type = sanitize_text_field($_POST['post_type']);
         
         if (!Nexus_Links_Permissions::can_edit_link($link_id)) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' . __('You cannot delete this link.', 'nexus-wp-link-shortener') . '</p></div>';
-            });
-            return;
+            wp_die('You cannot delete this link');
         }
         
         $result = Nexus_Links_Database::delete_link($link_id);
         
         if ($result !== false) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-success is-dismissible"><p>' . __('Link deleted successfully!', 'nexus-wp-link-shortener') . '</p></div>';
-            });
+            $this->add_admin_notice(__('Link deleted successfully!', 'nexus-wp-link-shortener'), 'success');
         } else {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' . __('Failed to delete link.', 'nexus-wp-link-shortener') . '</p></div>';
-            });
+            $this->add_admin_notice(__('Failed to delete link.', 'nexus-wp-link-shortener'), 'error');
+        }
+        
+        // Redirect back to manage links page
+        $redirect_url = admin_url('admin.php?page=nexus-links-manage&post_id=' . $post_id . '&post_type=' . $post_type);
+        wp_redirect($redirect_url);
+        exit;
+    }
+    
+    /**
+     * Add admin notice
+     */
+    private function add_admin_notice($message, $type = 'success') {
+        set_transient('nexus_links_admin_notice', array(
+            'message' => $message,
+            'type' => $type
+        ), 30);
+    }
+    
+    /**
+     * Display admin notices
+     */
+    public function display_admin_notices() {
+        $notice = get_transient('nexus_links_admin_notice');
+        if ($notice) {
+            echo '<div class="notice notice-' . esc_attr($notice['type']) . ' is-dismissible"><p>' . esc_html($notice['message']) . '</p></div>';
+            delete_transient('nexus_links_admin_notice');
         }
     }
 }
