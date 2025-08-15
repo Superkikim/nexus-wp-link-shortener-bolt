@@ -70,6 +70,45 @@ class Nexus_WP_Link_Shortener {
             flush_rewrite_rules();
             delete_option('nexus_links_flush_rewrite_rules');
         }
+        
+        // Check if we need to flush rules due to conflicts
+        $this->check_rewrite_conflicts();
+    }
+    
+    /**
+     * Check for rewrite rule conflicts that might cause lang parameters
+     */
+    private function check_rewrite_conflicts() {
+        global $wp_rewrite;
+        
+        // Get current rewrite rules
+        $rules = get_option('rewrite_rules');
+        
+        if (!$rules) {
+            return;
+        }
+        
+        // Check if there are conflicting rules that might add lang parameters
+        $conflicting_patterns = array(
+            '/\?\&?lang=/',
+            '/language/',
+            '/locale/'
+        );
+        
+        $has_conflicts = false;
+        foreach ($rules as $pattern => $replacement) {
+            foreach ($conflicting_patterns as $conflict_pattern) {
+                if (preg_match($conflict_pattern, $replacement)) {
+                    $has_conflicts = true;
+                    break 2;
+                }
+            }
+        }
+        
+        // If conflicts detected, ensure our rules take priority
+        if ($has_conflicts) {
+            update_option('nexus_links_flush_rewrite_rules', true);
+        }
     }
     
     /**
