@@ -431,7 +431,7 @@ class Nexus_Links_Admin {
         ));
         
         if ($last_link) {
-            $url = Nexus_Links_URL_Handler::get_short_url($last_link->slug);
+            $url = home_url('/' . $last_link->slug);
             wp_send_json_success(array('url' => $url));
         } else {
             wp_send_json_error(__('No links found for this content type.', 'nexus-wp-link-shortener'));

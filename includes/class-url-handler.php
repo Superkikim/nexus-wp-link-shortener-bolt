@@ -26,8 +26,7 @@ class Nexus_Links_URL_Handler {
      * Get short URL from slug
      */
     public static function get_short_url($slug) {
-        $base_url = home_url();
-        return $base_url . '/' . $slug;
+        return home_url('/' . $slug);
     }
     
     /**

@@ -141,7 +141,7 @@ class Nexus_Links_Database {
             return array(
                 'id' => $wpdb->insert_id,
                 'slug' => $slug,
-                'url' => home_url('/go/' . $slug)
+                'url' => home_url('/' . $slug)
             );
         }
         
