@@ -12,6 +12,7 @@ class Nexus_Links_Admin {
         add_action('wp_ajax_nexus_cleanup_analytics', array($this, 'ajax_cleanup_analytics'));
         add_action('wp_ajax_nexus_export_data', array($this, 'ajax_export_data'));
         add_action('wp_ajax_nexus_get_last_link', array($this, 'ajax_get_last_link'));
+        add_action('wp_ajax_nexus_get_last_link_for_post', array($this, 'ajax_get_last_link_for_post'));
         add_action('wp_ajax_nexus_reset_all_data', array($this, 'ajax_reset_all_data'));
         add_action('wp_ajax_nexus_remove_all_links', array($this, 'ajax_remove_all_links'));
         add_action('wp_ajax_nexus_create_custom_link', array($this, 'ajax_create_custom_link'));
@@ -582,23 +583,7 @@ class Nexus_Links_Admin {
      * Get posts with link information
      */
     private function get_posts_with_links($post_type) {
-        global $wpdb;
-        
-        $posts_table = $wpdb->posts;
-        $links_table = $wpdb->prefix . 'nexus_links';
-        
-        $posts = $wpdb->get_results($wpdb->prepare("
-            SELECT p.*, 
-                   COUNT(l.id) as link_count
-            FROM $posts_table p
-            LEFT JOIN $links_table l ON p.ID = l.post_id AND l.post_type = %s
-            WHERE p.post_type = %s 
-                AND p.post_status = 'publish'
-            GROUP BY p.ID
-            ORDER BY p.post_date DESC
-        ", $post_type, $post_type));
-        
-        return $posts;
+        return Nexus_Links_Database::get_posts_with_links_enhanced($post_type);
     }
     
     /**
@@ -673,6 +658,49 @@ class Nexus_Links_Admin {
         }
         
         wp_send_json_success($data);
+    }
+    
+    /**
+     * AJAX handler for getting last link for specific post
+     */
+    public function ajax_get_last_link_for_post() {
+        if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
+            wp_die('Security check failed');
+        }
+        
+        if (!current_user_can('edit_posts')) {
+            wp_die('Insufficient permissions');
+        }
+        
+        $post_id = intval($_POST['post_id']);
+        $post_type = sanitize_text_field($_POST['post_type']);
+        
+        if (!$post_id) {
+            wp_send_json_error(__('Invalid post ID.', 'nexus-wp-link-shortener'));
+        }
+        
+        global $wpdb;
+        $table = $wpdb->prefix . 'nexus_links';
+        
+        // Get the most recent link for this specific post
+        $last_link = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table 
+             WHERE post_id = %d AND post_type = %s AND active = 1
+             ORDER BY created_at DESC, id DESC 
+             LIMIT 1",
+            $post_id, $post_type
+        ));
+        
+        if ($last_link) {
+            $url = home_url('/' . $last_link->slug);
+            wp_send_json_success(array(
+                'url' => $url,
+                'name' => $last_link->name,
+                'created_at' => $last_link->created_at
+            ));
+        } else {
+            wp_send_json_error(__('No active links found for this content item.', 'nexus-wp-link-shortener'));
+        }
     }
     
     /**

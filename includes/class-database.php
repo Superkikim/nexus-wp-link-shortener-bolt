@@ -80,6 +80,32 @@ class Nexus_Links_Database {
     }
     
     /**
+     * Get posts with link information including author and categories
+     */
+    public static function get_posts_with_links_enhanced($post_type) {
+        global $wpdb;
+        
+        $posts_table = $wpdb->posts;
+        $links_table = $wpdb->prefix . 'nexus_links';
+        $users_table = $wpdb->users;
+        
+        $posts = $wpdb->get_results($wpdb->prepare("
+            SELECT p.*, 
+                   u.display_name as author_name,
+                   COUNT(l.id) as link_count
+            FROM $posts_table p
+            LEFT JOIN $users_table u ON p.post_author = u.ID
+            LEFT JOIN $links_table l ON p.ID = l.post_id AND l.post_type = %s
+            WHERE p.post_type = %s 
+                AND p.post_status = 'publish'
+            GROUP BY p.ID
+            ORDER BY p.post_date DESC
+        ", $post_type, $post_type));
+        
+        return $posts;
+    }
+    
+    /**
      * Get a link by slug
      */
     public static function get_link_by_slug($slug) {
