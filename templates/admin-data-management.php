@@ -60,7 +60,7 @@
             
             <div class="nexus-action-section">
                 <h3><?php _e('Clean Old Analytics', 'nexus-wp-link-shortener'); ?></h3>
-                <p><?php _e('Remove analytics data older than your configured retention period (currently set to <?php echo get_option('nexus_links_retention_period', 13); ?> months).', 'nexus-wp-link-shortener'); ?></p>
+                <p><?php printf(__('Remove analytics data older than your configured retention period (currently set to %d months).', 'nexus-wp-link-shortener'), get_option('nexus_links_retention_period', 13)); ?></p>
                 <button type="button" class="button button-primary" id="cleanup-analytics">
                     <?php _e('Clean Old Analytics', 'nexus-wp-link-shortener'); ?>
                 </button>

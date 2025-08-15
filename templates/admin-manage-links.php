@@ -55,8 +55,8 @@
                 <tr>
                     <td>
                         <strong><?php echo home_url('/go/' . $link->slug); ?></strong>
-                        <button class="button-link nexus-copy-button" data-url="<?php echo home_url('/go/' . $link->slug); ?>">
-                            <?php _e('Copy', 'nexus-wp-link-shortener'); ?>
+                        <button class="button-link nexus-copy-button" data-url="<?php echo home_url('/go/' . $link->slug); ?>" title="<?php _e('Copy to clipboard', 'nexus-wp-link-shortener'); ?>">
+                            <span class="dashicons dashicons-admin-page"></span>
                         </button>
                     </td>
                     <td><?php echo esc_html($link->name); ?></td>

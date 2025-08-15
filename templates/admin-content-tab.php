@@ -1,6 +1,21 @@
 <div class="wrap">
     <h1><?php echo esc_html($post_type_object->labels->name); ?> - <?php _e('Short Links', 'nexus-wp-link-shortener'); ?></h1>
     
+    <!-- Search and Filter Controls -->
+    <div class="nexus-controls-container">
+        <div class="nexus-search-container">
+            <input type="text" id="nexus-search" placeholder="<?php _e('Search content...', 'nexus-wp-link-shortener'); ?>" class="regular-text">
+            <button type="button" id="nexus-search-clear" class="button" style="display: none;"><?php _e('Clear', 'nexus-wp-link-shortener'); ?></button>
+        </div>
+        
+        <div class="nexus-actions-container">
+            <button type="button" id="copy-last-link" class="button button-secondary" title="<?php _e('Copy last created short link', 'nexus-wp-link-shortener'); ?>">
+                <span class="dashicons dashicons-admin-page"></span>
+                <?php _e('Copy Last', 'nexus-wp-link-shortener'); ?>
+            </button>
+        </div>
+    </div>
+    
     <div class="nexus-filters">
         <label for="has-links-filter">
             <input type="checkbox" id="has-links-filter"> 
@@ -55,21 +70,9 @@
                         <?php _e('Manage Links', 'nexus-wp-link-shortener'); ?>
                     </a>
                     <?php endif; ?>
-<!-- Search functionality -->
-<div class="nexus-search-container">
-    <input type="text" id="nexus-search" placeholder="<?php _e('Search content...', 'nexus-wp-link-shortener'); ?>" class="regular-text">
-    <button type="button" id="nexus-search-clear" class="button" style="display: none;"><?php _e('Clear', 'nexus-wp-link-shortener'); ?></button>
-</div>
-
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-
-<div id="nexus-no-results" style="display: none;" class="nexus-no-results">
-    <p><?php _e('No content found matching your search criteria.', 'nexus-wp-link-shortener'); ?></p>
-</div>
+    <div id="nexus-no-results" style="display: none;" class="nexus-no-results">
+        <p><?php _e('No content found matching your search criteria.', 'nexus-wp-link-shortener'); ?></p>
+    </div>
 </div>
 
 <script>
@@ -126,21 +129,135 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function applyLinksFilter() {
         const showOnlyWithLinks = document.getElementById('has-links-filter').checked;
-        const visibleRows = Array.from(allRows).filter(row => row.style.display !== 'none');
+        let visibleCount = 0;
         
-        visibleRows.forEach(row => {
+        allRows.forEach(row => {
             const linkCount = parseInt(row.dataset.linkCount);
-            if (showOnlyWithLinks && linkCount === 0) {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const title = row.dataset.title || '';
+            const content = row.dataset.content || '';
+            const matchesSearch = searchTerm === '' || title.includes(searchTerm) || content.includes(searchTerm);
+            
+            let shouldShow = matchesSearch;
+            if (showOnlyWithLinks) {
+                shouldShow = shouldShow && linkCount > 0;
+            }
+            
+            if (shouldShow) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
                 row.style.display = 'none';
-            } else if (!showOnlyWithLinks) {
-                // Only show if it matches search criteria
-                const searchTerm = searchInput.value.toLowerCase().trim();
-                if (searchTerm === '') {
-                    row.style.display = '';
-                } else {
-                    const title = row.dataset.title || '';
-                    const content = row.dataset.content || '';
-                    row.style.display = (title.includes(searchTerm) || content.includes(searchTerm)) ? '' : 'none';
+            }
+        });
+        
+        // Show/hide no results message
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        if (visibleCount === 0 && (searchTerm !== '' || showOnlyWithLinks)) {
+            noResults.style.display = 'block';
+            tableBody.parentElement.style.display = 'none';
+        } else {
+            noResults.style.display = 'none';
+            tableBody.parentElement.style.display = '';
+        }
+    }
+    
+    // Copy last created link functionality
+    document.getElementById('copy-last-link').addEventListener('click', function() {
+        const button = this;
+        const originalText = button.innerHTML;
+        
+        button.disabled = true;
+        button.innerHTML = '<span class="dashicons dashicons-update spin"></span> <?php _e('Finding...', 'nexus-wp-link-shortener'); ?>';
+        
+        const formData = new FormData();
+        formData.append('action', 'nexus_get_last_link');
+        formData.append('post_type', '<?php echo $post_type; ?>');
+        formData.append('nonce', nexusLinks.nonce);
+        
+        fetch(nexusLinks.ajaxUrl, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data.url) {
+                navigator.clipboard.writeText(data.data.url).then(() => {
+                    button.innerHTML = '<span class="dashicons dashicons-yes"></span> <?php _e('Copied!', 'nexus-wp-link-shortener'); ?>';
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }, 2000);
+                });
+            } else {
+                alert(data.data || '<?php _e('No links found for this content type.', 'nexus-wp-link-shortener'); ?>');
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('<?php _e('Error occurred while fetching last link.', 'nexus-wp-link-shortener'); ?>');
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    });
+    
+    // Filter functionality
+    document.getElementById('has-links-filter').addEventListener('change', function() {
+        applyLinksFilter();
+    });
+});
+</script>
+
+<style>
+.nexus-controls-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.nexus-search-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nexus-actions-container {
+    display: flex;
+    gap: 10px;
+}
+
+#copy-last-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#copy-last-link .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.nexus-filters {
+    margin: 10px 0;
+}
+</style>
                 }
             }
         });

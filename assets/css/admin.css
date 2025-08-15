@@ -275,3 +275,14 @@
 .nexus-copy-button:hover {
     text-decoration: underline;
 }
+
+.nexus-copy-button .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+}
+
+.nexus-copy-button:hover .dashicons {
+    color: #0073aa;
+}

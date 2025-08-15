@@ -11,6 +11,7 @@ class Nexus_Links_Admin {
         add_action('wp_ajax_nexus_get_analytics', array($this, 'ajax_get_analytics'));
         add_action('wp_ajax_nexus_cleanup_analytics', array($this, 'ajax_cleanup_analytics'));
         add_action('wp_ajax_nexus_export_data', array($this, 'ajax_export_data'));
+        add_action('wp_ajax_nexus_get_last_link', array($this, 'ajax_get_last_link'));
         add_action('wp_ajax_nexus_reset_all_data', array($this, 'ajax_reset_all_data'));
         add_action('wp_ajax_nexus_remove_all_links', array($this, 'ajax_remove_all_links'));
         add_action('admin_post_nexus_delete_link', array($this, 'handle_delete_link'));
@@ -405,6 +406,36 @@ class Nexus_Links_Admin {
         }
         
         wp_send_json_success($data);
+    }
+    
+    /**
+     * AJAX handler for getting last created link
+     */
+    public function ajax_get_last_link() {
+        if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
+            wp_die('Security check failed');
+        }
+        
+        if (!current_user_can('edit_posts')) {
+            wp_die('Insufficient permissions');
+        }
+        
+        $post_type = sanitize_text_field($_POST['post_type']);
+        
+        global $wpdb;
+        $table = $wpdb->prefix . 'nexus_links';
+        
+        $last_link = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE post_type = %s ORDER BY created_at DESC LIMIT 1",
+            $post_type
+        ));
+        
+        if ($last_link) {
+            $url = Nexus_Links_URL_Handler::get_short_url($last_link->slug);
+            wp_send_json_success(array('url' => $url));
+        } else {
+            wp_send_json_error(__('No links found for this content type.', 'nexus-wp-link-shortener'));
+        }
     }
     
     /**
