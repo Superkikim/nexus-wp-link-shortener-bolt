@@ -284,7 +284,7 @@ class Nexus_Links_Analytics {
         $top_referrers = $wpdb->get_results("
             SELECT 
                 CASE 
-                    WHEN referrer IS NULL OR referrer = '' THEN 'Direct Traffic'
+                    WHEN referrer IS NULL OR referrer = '' OR referrer = 'null' THEN 'Direct Traffic'
                     ELSE SUBSTRING_INDEX(SUBSTRING_INDEX(REPLACE(REPLACE(referrer, 'http://', ''), 'https://', ''), '/', 1), '?', 1)
                 END as referrer_domain,
                 referrer,

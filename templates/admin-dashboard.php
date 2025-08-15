@@ -105,7 +105,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (referrers && referrers.length > 0) {
             const list = document.createElement('ul');
             referrers.forEach(function(referrer) {
-                const domain = referrer.referrer_domain || extractDomain(referrer.referrer) || 'Direct Traffic';
+                let domain = referrer.referrer_domain || extractDomain(referrer.referrer) || 'Direct Traffic';
+                
+                // Handle null/empty referrers properly
+                if (domain === 'null' || domain === '' || !domain) {
+                    domain = 'Direct Traffic';
+                }
+                
                 const item = document.createElement('li');
                 item.innerHTML = 
                     '<span><strong>' + domain + '</strong></span>' +

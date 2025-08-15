@@ -11,6 +11,8 @@ class Nexus_Links_Admin {
         add_action('wp_ajax_nexus_get_analytics', array($this, 'ajax_get_analytics'));
         add_action('wp_ajax_nexus_cleanup_analytics', array($this, 'ajax_cleanup_analytics'));
         add_action('wp_ajax_nexus_export_data', array($this, 'ajax_export_data'));
+        add_action('wp_ajax_nexus_reset_all_data', array($this, 'ajax_reset_all_data'));
+        add_action('wp_ajax_nexus_remove_all_links', array($this, 'ajax_remove_all_links'));
         add_action('admin_post_nexus_delete_link', array($this, 'handle_delete_link'));
         add_action('admin_notices', array($this, 'display_admin_notices'));
     }
@@ -81,6 +83,16 @@ class Nexus_Links_Admin {
             'manage_options',
             'nexus-links-settings',
             array($this, 'settings_page')
+        );
+        
+        // Add data management page
+        add_submenu_page(
+            'nexus-links',
+            __('Data Management', 'nexus-wp-link-shortener'),
+            __('Data Management', 'nexus-wp-link-shortener'),
+            'manage_options',
+            'nexus-links-data-management',
+            array($this, 'data_management_page')
         );
         
         // Hidden manage links page
@@ -219,6 +231,86 @@ class Nexus_Links_Admin {
     }
     
     /**
+     * Data management page
+     */
+    public function data_management_page() {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.'));
+        }
+        
+        // Get current statistics
+        global $wpdb;
+        $links_table = $wpdb->prefix . 'nexus_links';
+        $clicks_table = $wpdb->prefix . 'nexus_clicks';
+        
+        $total_links = $wpdb->get_var("SELECT COUNT(*) FROM $links_table");
+        $total_clicks = $wpdb->get_var("SELECT COUNT(*) FROM $clicks_table");
+        $active_links = $wpdb->get_var("SELECT COUNT(*) FROM $links_table WHERE active = 1");
+        
+        require_once NEXUS_LINKS_PLUGIN_DIR . 'templates/admin-data-management.php';
+    }
+    
+    /**
+     * AJAX handler for removing all links
+     */
+    public function ajax_remove_all_links() {
+        if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
+            wp_die('Security check failed');
+        }
+        
+        if (!current_user_can('manage_options')) {
+            wp_die('Insufficient permissions');
+        }
+        
+        global $wpdb;
+        $links_table = $wpdb->prefix . 'nexus_links';
+        $clicks_table = $wpdb->prefix . 'nexus_clicks';
+        
+        // Delete clicks first (foreign key constraint)
+        $clicks_deleted = $wpdb->query("DELETE FROM $clicks_table");
+        
+        // Delete links
+        $links_deleted = $wpdb->query("DELETE FROM $links_table");
+        
+        if ($links_deleted !== false) {
+            wp_send_json_success(array(
+                'message' => sprintf(__('Successfully removed %d links and %d click records.', 'nexus-wp-link-shortener'), $links_deleted, $clicks_deleted),
+                'links_deleted' => $links_deleted,
+                'clicks_deleted' => $clicks_deleted
+            ));
+        } else {
+            wp_send_json_error(__('Failed to remove links. Please try again.', 'nexus-wp-link-shortener'));
+        }
+    }
+    
+    /**
+     * AJAX handler for resetting all analytics data
+     */
+    public function ajax_reset_all_data() {
+        if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
+            wp_die('Security check failed');
+        }
+        
+        if (!current_user_can('manage_options')) {
+            wp_die('Insufficient permissions');
+        }
+        
+        global $wpdb;
+        $clicks_table = $wpdb->prefix . 'nexus_clicks';
+        
+        // Delete all analytics data
+        $clicks_deleted = $wpdb->query("DELETE FROM $clicks_table");
+        
+        if ($clicks_deleted !== false) {
+            wp_send_json_success(array(
+                'message' => sprintf(__('Successfully reset analytics data. Removed %d click records.', 'nexus-wp-link-shortener'), $clicks_deleted),
+                'clicks_deleted' => $clicks_deleted
+            ));
+        } else {
+            wp_send_json_error(__('Failed to reset analytics data. Please try again.', 'nexus-wp-link-shortener'));
+        }
+    }
+    /**
      * Get posts with link information
      */
     private function get_posts_with_links($post_type) {
@@ -282,7 +374,10 @@ class Nexus_Links_Admin {
      * AJAX handler for getting analytics data
      */
     public function ajax_get_analytics() {
-        if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
+        // Handle both POST and GET requests for flexibility
+        $nonce = isset($_POST['nonce']) ? $_POST['nonce'] : (isset($_GET['nonce']) ? $_GET['nonce'] : '');
+        
+        if (!wp_verify_nonce($nonce, 'nexus_links_nonce')) {
             wp_die('Security check failed');
         }
         
@@ -290,10 +385,24 @@ class Nexus_Links_Admin {
             wp_die('Insufficient permissions');
         }
         
-        $date_range = isset($_POST['date_range']) ? sanitize_text_field($_POST['date_range']) : '30';
+        $date_range = isset($_POST['date_range']) ? sanitize_text_field($_POST['date_range']) : 
         
         $analytics = new Nexus_Links_Analytics();
         $data = $analytics->get_dashboard_data($date_range);
+        
+        // Ensure data is properly formatted
+        if (!$data) {
+            $data = array(
+                'total_clicks' => 0,
+                'unique_clicks' => 0,
+                'human_clicks' => 0,
+                'bot_clicks' => 0,
+                'top_referrers' => array(),
+                'clicks_by_day' => array(),
+                'device_breakdown' => array(),
+                'browser_breakdown' => array()
+            );
+        }
         
         wp_send_json_success($data);
     }
