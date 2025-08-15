@@ -122,7 +122,7 @@ class Nexus_Links_Database {
         $result = $wpdb->insert(
             $table,
             array(
-                'post_id' => $data['post_id'],
+                'post_id' => $data['post_id'] ?? 0,
                 'post_type' => $data['post_type'],
                 'slug' => $slug,
                 'name' => $data['name'],

@@ -14,6 +14,9 @@ class Nexus_Links_Admin {
         add_action('wp_ajax_nexus_get_last_link', array($this, 'ajax_get_last_link'));
         add_action('wp_ajax_nexus_reset_all_data', array($this, 'ajax_reset_all_data'));
         add_action('wp_ajax_nexus_remove_all_links', array($this, 'ajax_remove_all_links'));
+        add_action('wp_ajax_nexus_create_custom_link', array($this, 'ajax_create_custom_link'));
+        add_action('wp_ajax_nexus_update_custom_link', array($this, 'ajax_update_custom_link'));
+        add_action('wp_ajax_nexus_delete_custom_link', array($this, 'ajax_delete_custom_link'));
         add_action('admin_post_nexus_delete_link', array($this, 'handle_delete_link'));
         add_action('admin_notices', array($this, 'display_admin_notices'));
     }
@@ -59,6 +62,15 @@ class Nexus_Links_Admin {
             $capability,
             'nexus-links-posts',
             array($this, 'posts_tab')
+        );
+        
+        add_submenu_page(
+            'nexus-links',
+            __('Custom Links', 'nexus-wp-link-shortener'),
+            __('Custom Links', 'nexus-wp-link-shortener'),
+            $capability,
+            'nexus-links-custom',
+            array($this, 'custom_links_page')
         );
         
         // Add CPT tabs dynamically
@@ -203,6 +215,24 @@ class Nexus_Links_Admin {
     }
     
     /**
+     * Custom links page
+     */
+    public function custom_links_page() {
+        if (!current_user_can('edit_posts')) {
+            wp_die(__('You do not have sufficient permissions to access this page.'));
+        }
+        
+        // Handle form submissions
+        if (isset($_POST['action'])) {
+            $this->handle_custom_links_form_submission();
+        }
+        
+        $custom_links = $this->get_custom_links();
+        
+        require_once NEXUS_LINKS_PLUGIN_DIR . 'templates/admin-custom-links.php';
+    }
+    
+    /**
      * Generic content tab
      */
     private function content_tab($post_type) {
@@ -311,6 +341,243 @@ class Nexus_Links_Admin {
             wp_send_json_error(__('Failed to reset analytics data. Please try again.', 'nexus-wp-link-shortener'));
         }
     }
+    /**
+     * Get custom links (links not associated with posts)
+     */
+    private function get_custom_links() {
+        global $wpdb;
+        
+        $links_table = $wpdb->prefix . 'nexus_links';
+        
+        return $wpdb->get_results("
+            SELECT * FROM $links_table 
+            WHERE post_id = 0 AND post_type = 'custom'
+            ORDER BY created_at DESC
+        ");
+    }
+    
+    /**
+     * Handle custom links form submission
+     */
+    private function handle_custom_links_form_submission() {
+        if (!wp_verify_nonce($_POST['nexus_links_nonce'], 'nexus_links_custom')) {
+            return;
+        }
+        
+        $action = sanitize_text_field($_POST['action']);
+        
+        switch ($action) {
+            case 'create_custom_link':
+                $this->create_custom_link();
+                break;
+            case 'update_custom_link':
+                $this->update_custom_link();
+                break;
+            case 'delete_custom_link':
+                $this->delete_custom_link();
+                break;
+        }
+    }
+    
+    /**
+     * Create custom link
+     */
+    private function create_custom_link() {
+        $target_url = esc_url_raw($_POST['target_url']);
+        
+        if (!filter_var($target_url, FILTER_VALIDATE_URL)) {
+            $this->add_admin_notice(__('Please enter a valid URL.', 'nexus-wp-link-shortener'), 'error');
+            return;
+        }
+        
+        $link_data = array(
+            'post_id' => 0,
+            'post_type' => 'custom',
+            'name' => sanitize_text_field($_POST['name']),
+            'campaign' => sanitize_text_field($_POST['campaign']),
+            'description' => sanitize_textarea_field($_POST['description']),
+            'target_url' => $target_url,
+            'http_status' => intval($_POST['http_status']),
+            'active' => isset($_POST['active']) ? 1 : 0
+        );
+        
+        $result = Nexus_Links_Database::create_link($link_data);
+        
+        if ($result) {
+            $this->add_admin_notice(__('Custom link created successfully!', 'nexus-wp-link-shortener'), 'success');
+        } else {
+            $this->add_admin_notice(__('Failed to create custom link.', 'nexus-wp-link-shortener'), 'error');
+        }
+    }
+    
+    /**
+     * Update custom link
+     */
+    private function update_custom_link() {
+        $link_id = intval($_POST['link_id']);
+        
+        if (!Nexus_Links_Permissions::can_edit_link($link_id)) {
+            $this->add_admin_notice(__('You cannot edit this link.', 'nexus-wp-link-shortener'), 'error');
+            return;
+        }
+        
+        $target_url = esc_url_raw($_POST['target_url']);
+        
+        if (!filter_var($target_url, FILTER_VALIDATE_URL)) {
+            $this->add_admin_notice(__('Please enter a valid URL.', 'nexus-wp-link-shortener'), 'error');
+            return;
+        }
+        
+        $data = array(
+            'name' => sanitize_text_field($_POST['name']),
+            'campaign' => sanitize_text_field($_POST['campaign']),
+            'description' => sanitize_textarea_field($_POST['description']),
+            'target_url' => $target_url,
+            'http_status' => intval($_POST['http_status']),
+            'active' => isset($_POST['active']) ? 1 : 0
+        );
+        
+        $result = Nexus_Links_Database::update_link($link_id, $data);
+        
+        if ($result !== false) {
+            $this->add_admin_notice(__('Custom link updated successfully!', 'nexus-wp-link-shortener'), 'success');
+        } else {
+            $this->add_admin_notice(__('Failed to update custom link.', 'nexus-wp-link-shortener'), 'error');
+        }
+    }
+    
+    /**
+     * Delete custom link
+     */
+    private function delete_custom_link() {
+        $link_id = intval($_POST['link_id']);
+        
+        if (!Nexus_Links_Permissions::can_edit_link($link_id)) {
+            $this->add_admin_notice(__('You cannot delete this link.', 'nexus-wp-link-shortener'), 'error');
+            return;
+        }
+        
+        $result = Nexus_Links_Database::delete_link($link_id);
+        
+        if ($result !== false) {
+            $this->add_admin_notice(__('Custom link deleted successfully!', 'nexus-wp-link-shortener'), 'success');
+        } else {
+            $this->add_admin_notice(__('Failed to delete custom link.', 'nexus-wp-link-shortener'), 'error');
+        }
+    }
+    
+    /**
+     * AJAX handler for creating custom link
+     */
+    public function ajax_create_custom_link() {
+        if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
+            wp_die('Security check failed');
+        }
+        
+        if (!current_user_can('edit_posts')) {
+            wp_die('Insufficient permissions');
+        }
+        
+        $target_url = esc_url_raw($_POST['target_url']);
+        $name = sanitize_text_field($_POST['name']);
+        
+        if (!filter_var($target_url, FILTER_VALIDATE_URL)) {
+            wp_send_json_error('Please enter a valid URL');
+        }
+        
+        if (empty($name)) {
+            wp_send_json_error('Please enter a name for the link');
+        }
+        
+        $link_data = array(
+            'post_id' => 0,
+            'post_type' => 'custom',
+            'name' => $name,
+            'campaign' => sanitize_text_field($_POST['campaign']),
+            'description' => sanitize_textarea_field($_POST['description']),
+            'target_url' => $target_url,
+            'http_status' => intval($_POST['http_status']) ?: 302,
+            'active' => 1
+        );
+        
+        $result = Nexus_Links_Database::create_link($link_data);
+        
+        if ($result) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error('Failed to create custom link');
+        }
+    }
+    
+    /**
+     * AJAX handler for updating custom link
+     */
+    public function ajax_update_custom_link() {
+        if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
+            wp_die('Security check failed');
+        }
+        
+        if (!current_user_can('edit_posts')) {
+            wp_die('Insufficient permissions');
+        }
+        
+        $link_id = intval($_POST['link_id']);
+        
+        if (!Nexus_Links_Permissions::can_edit_link($link_id)) {
+            wp_send_json_error('You cannot edit this link');
+        }
+        
+        $target_url = esc_url_raw($_POST['target_url']);
+        
+        if (!filter_var($target_url, FILTER_VALIDATE_URL)) {
+            wp_send_json_error('Please enter a valid URL');
+        }
+        
+        $data = array(
+            'name' => sanitize_text_field($_POST['name']),
+            'campaign' => sanitize_text_field($_POST['campaign']),
+            'description' => sanitize_textarea_field($_POST['description']),
+            'target_url' => $target_url,
+            'http_status' => intval($_POST['http_status']),
+            'active' => isset($_POST['active']) ? 1 : 0
+        );
+        
+        $result = Nexus_Links_Database::update_link($link_id, $data);
+        
+        if ($result !== false) {
+            wp_send_json_success('Link updated successfully');
+        } else {
+            wp_send_json_error('Failed to update link');
+        }
+    }
+    
+    /**
+     * AJAX handler for deleting custom link
+     */
+    public function ajax_delete_custom_link() {
+        if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
+            wp_die('Security check failed');
+        }
+        
+        if (!current_user_can('edit_posts')) {
+            wp_die('Insufficient permissions');
+        }
+        
+        $link_id = intval($_POST['link_id']);
+        
+        if (!Nexus_Links_Permissions::can_edit_link($link_id)) {
+            wp_send_json_error('You cannot delete this link');
+        }
+        
+        $result = Nexus_Links_Database::delete_link($link_id);
+        
+        if ($result !== false) {
+            wp_send_json_success('Link deleted successfully');
+        } else {
+            wp_send_json_error('Failed to delete link');
+        }
+    }
+    
     /**
      * Get posts with link information
      */
