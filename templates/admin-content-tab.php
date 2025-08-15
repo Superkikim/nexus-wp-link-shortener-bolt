@@ -32,24 +32,17 @@
                 <th><?php _e('Actions', 'nexus-wp-link-shortener'); ?></th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="nexus-content-table-body">
             <?php foreach ($posts as $post): ?>
-            <tr data-post-id="<?php echo $post->ID; ?>" data-link-count="<?php echo $post->link_count; ?>">
+            <tr data-post-id="<?php echo $post->ID; ?>" 
+                data-link-count="<?php echo $post->link_count; ?>"
+                data-title="<?php echo esc_attr(strtolower($post->post_title)); ?>"
+                data-content="<?php echo esc_attr(strtolower(wp_strip_all_tags($post->post_content))); ?>">
                 <td>
                     <strong><a href="<?php echo get_edit_post_link($post->ID); ?>"><?php echo esc_html($post->post_title); ?></a></strong>
                     <div class="post-url"><?php echo get_permalink($post->ID); ?></div>
                 </td>
                 <td><?php echo get_the_date('', $post->ID); ?></td>
-        <tr data-post-id="<?php echo $post->ID; ?>" 
-            data-link-count="<?php echo $post->link_count; ?>"
-            data-title="<?php echo esc_attr(strtolower($post->post_title)); ?>"
-            data-content="<?php echo esc_attr(strtolower(wp_strip_all_tags($post->post_content))); ?>">
-                    <?php if ($post->link_count > 0): ?>
-                        <span class="nexus-link-count"><?php echo $post->link_count; ?> <?php _e('links', 'nexus-wp-link-shortener'); ?></span>
-                    <?php else: ?>
-                        <span class="nexus-no-links"><?php _e('No links', 'nexus-wp-link-shortener'); ?></span>
-                    <?php endif; ?>
-                </td>
                 <td>
                     <span class="nexus-link-count">
                         <?php 
@@ -59,8 +52,12 @@
                         ); 
                         ?>
                     </span>
+                </td>
+                <td>
+                    <button type="button" 
+                            class="button button-primary nexus-instant-create" 
                             data-post-id="<?php echo $post->ID; ?>" 
-                    <span class="nexus-no-links"><?php _e('No links', 'nexus-wp-link-shortener'); ?></span>
+                            data-post-type="<?php echo $post_type; ?>">
                         <?php _e('Instant Create + Copy', 'nexus-wp-link-shortener'); ?>
                     </button>
                     
@@ -70,6 +67,12 @@
                         <?php _e('Manage Links', 'nexus-wp-link-shortener'); ?>
                     </a>
                     <?php endif; ?>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    
     <div id="nexus-no-results" style="display: none;" class="nexus-no-results">
         <p><?php _e('No content found matching your search criteria.', 'nexus-wp-link-shortener'); ?></p>
     </div>
@@ -162,6 +165,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Search event listeners
+    searchInput.addEventListener('input', performSearch);
+    searchInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Escape') {
+            this.value = '';
+            performSearch();
+        }
+    });
+    
+    searchClear.addEventListener('click', function() {
+        searchInput.value = '';
+        performSearch();
+        searchInput.focus();
+    });
+    
     // Copy last created link functionality
     document.getElementById('copy-last-link').addEventListener('click', function() {
         const button = this;
@@ -203,10 +221,55 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Filter functionality
-    document.getElementById('has-links-filter').addEventListener('change', function() {
-        applyLinksFilter();
+    // Instant create functionality
+    document.querySelectorAll('.nexus-instant-create').forEach(button => {
+        button.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            const postType = this.dataset.postType;
+            const originalText = this.textContent;
+            
+            this.disabled = true;
+            this.textContent = nexusLinks.strings.creating;
+            
+            const formData = new FormData();
+            formData.append('action', 'nexus_create_instant_link');
+            formData.append('post_id', postId);
+            formData.append('post_type', postType);
+            formData.append('nonce', nexusLinks.nonce);
+            
+            fetch(nexusLinks.ajaxUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Copy to clipboard
+                    navigator.clipboard.writeText(data.data.url).then(() => {
+                        this.textContent = nexusLinks.strings.created;
+                        setTimeout(() => {
+                            this.textContent = originalText;
+                            this.disabled = false;
+                            location.reload(); // Refresh to update link counts
+                        }, 2000);
+                    });
+                } else {
+                    alert(nexusLinks.strings.error);
+                    this.textContent = originalText;
+                    this.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(nexusLinks.strings.error);
+                this.textContent = originalText;
+                this.disabled = false;
+            });
+        });
     });
+    
+    // Filter functionality
+    document.getElementById('has-links-filter').addEventListener('change', applyLinksFilter);
 });
 </script>
 
@@ -257,75 +320,41 @@ document.addEventListener('DOMContentLoaded', function() {
 .nexus-filters {
     margin: 10px 0;
 }
+
+.nexus-no-results {
+    text-align: center;
+    padding: 40px 20px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #666;
+}
+
+.nexus-link-count {
+    font-weight: bold;
+    color: #00a32a;
+}
+
+.post-url {
+    font-size: 12px;
+    color: #646970;
+    margin-top: 4px;
+}
+
+.nexus-instant-create {
+    background: #00a32a !important;
+    border-color: #00a32a !important;
+    color: #fff !important;
+}
+
+.nexus-instant-create:hover {
+    background: #008a20 !important;
+    border-color: #008a20 !important;
+}
+
+.nexus-instant-create:disabled {
+    background: #ddd !important;
+    border-color: #ddd !important;
+    cursor: not-allowed;
+}
 </style>
-                }
-            }
-        });
-    }
-    
-    // Search event listeners
-    searchInput.addEventListener('input', performSearch);
-    searchInput.addEventListener('keyup', function(e) {
-        if (e.key === 'Escape') {
-            this.value = '';
-            performSearch();
-        }
-    });
-    
-    searchClear.addEventListener('click', function() {
-        searchInput.value = '';
-        performSearch();
-        searchInput.focus();
-    });
-    
-    // Instant create functionality
-    document.querySelectorAll('.nexus-instant-create').forEach(button => {
-        button.addEventListener('click', function() {
-            const postId = this.dataset.postId;
-            const postType = this.dataset.postType;
-            const originalText = this.textContent;
-            
-    <tbody id="nexus-content-table-body">
-            this.disabled = true;
-            
-            const formData = new FormData();
-            formData.append('action', 'nexus_create_instant_link');
-            formData.append('post_id', postId);
-            formData.append('post_type', postType);
-            formData.append('nonce', nexusLinks.nonce);
-            
-            fetch(nexusLinks.ajaxUrl, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Copy to clipboard
-                    navigator.clipboard.writeText(data.data.url).then(() => {
-                        this.textContent = nexusLinks.strings.created;
-                        setTimeout(() => {
-                            this.textContent = originalText;
-                            this.disabled = false;
-                            location.reload(); // Refresh to update link counts
-                        }, 2000);
-                    });
-                } else {
-                    alert(nexusLinks.strings.error);
-                    this.textContent = originalText;
-                    this.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert(nexusLinks.strings.error);
-                this.textContent = originalText;
-                this.disabled = false;
-            });
-        });
-    });
-    
-    // Filter functionality
-    document.getElementById('has-links-filter').addEventListener('change', applyLinksFilter);
-});
-</script>
