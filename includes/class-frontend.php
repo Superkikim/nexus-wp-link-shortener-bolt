@@ -13,6 +13,18 @@ class Nexus_Links_Frontend {
      * Add rewrite rules for short URLs
      */
     public function add_rewrite_rules() {
+        $remove_go_segment = get_option('nexus_links_remove_go_segment', false);
+        
+        if ($remove_go_segment) {
+            // Direct slug routing - higher risk of conflicts
+            add_rewrite_rule(
+                '^([a-zA-Z0-9]{6})/?$',
+                'index.php?nexus_short_link=$matches[1]',
+                'top'
+            );
+        }
+        
+        // Always keep the /go/ route for backward compatibility
         add_rewrite_rule(
             '^go/([a-zA-Z0-9]{6})/?$',
             'index.php?nexus_short_link=$matches[1]',

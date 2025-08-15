@@ -280,26 +280,35 @@ class Nexus_Links_Analytics {
             WHERE c.is_bot = 1 $where_date
         ");
         
-        // Top referrers
+        // Top referrers - Fixed query with proper domain extraction
         $top_referrers = $wpdb->get_results("
-            SELECT referrer, COUNT(*) as clicks
+            SELECT 
+                CASE 
+                    WHEN referrer IS NULL OR referrer = '' THEN 'Direct Traffic'
+                    ELSE SUBSTRING_INDEX(SUBSTRING_INDEX(REPLACE(REPLACE(referrer, 'http://', ''), 'https://', ''), '/', 1), '?', 1)
+                END as referrer_domain,
+                referrer,
+                COUNT(*) as clicks
             FROM $clicks_table c
-            WHERE referrer IS NOT NULL 
-                AND referrer != '' $where_date
-            GROUP BY referrer
+            WHERE 1=1 $where_date
+            GROUP BY referrer_domain, referrer
             ORDER BY clicks DESC
             LIMIT 10
         ");
         
-        // Clicks by day
-        $clicks_by_day = $wpdb->get_results("
-            SELECT DATE(c.timestamp) as date, COUNT(*) as clicks
+        // Clicks by day - Fixed to ensure we always have data points
+        $clicks_by_day = $wpdb->get_results($wpdb->prepare("
+            SELECT 
+                DATE(c.timestamp) as date, 
+                COUNT(*) as clicks
             FROM $clicks_table c
-            WHERE 1=1 $where_date
+            WHERE c.timestamp >= DATE_SUB(NOW(), INTERVAL %d DAY)
             GROUP BY DATE(c.timestamp)
-            ORDER BY date DESC
-            LIMIT 30
-        ");
+            ORDER BY date ASC
+        ", $date_range === 'all' ? 365 : intval($date_range)));
+        
+        // Fill in missing days with zero clicks
+        $clicks_by_day = $this->fill_missing_days($clicks_by_day, intval($date_range));
         
         // Device breakdown
         $device_breakdown = $wpdb->get_results("
@@ -330,5 +339,31 @@ class Nexus_Links_Analytics {
             'device_breakdown' => $device_breakdown,
             'browser_breakdown' => $browser_breakdown
         );
+    }
+    
+    /**
+     * Fill missing days with zero clicks for consistent chart display
+     */
+    private function fill_missing_days($clicks_data, $days) {
+        if ($days > 365) $days = 30; // Fallback for 'all' option
+        
+        $filled_data = array();
+        $existing_dates = array();
+        
+        // Create lookup array of existing dates
+        foreach ($clicks_data as $row) {
+            $existing_dates[$row->date] = intval($row->clicks);
+        }
+        
+        // Fill in all days in range
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $date = date('Y-m-d', strtotime("-$i days"));
+            $filled_data[] = (object) array(
+                'date' => $date,
+                'clicks' => isset($existing_dates[$date]) ? $existing_dates[$date] : 0
+            );
+        }
+        
+        return $filled_data;
     }
 }

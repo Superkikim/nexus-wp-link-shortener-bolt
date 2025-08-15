@@ -26,7 +26,22 @@ class Nexus_Links_URL_Handler {
      * Get short URL from slug
      */
     public static function get_short_url($slug) {
-        return home_url('/go/' . $slug);
+        $remove_www = get_option('nexus_links_remove_www_prefix', false);
+        $remove_go = get_option('nexus_links_remove_go_segment', false);
+        
+        $base_url = home_url();
+        
+        // Remove www prefix if enabled
+        if ($remove_www) {
+            $base_url = str_replace('://www.', '://', $base_url);
+        }
+        
+        // Choose URL format
+        if ($remove_go) {
+            return $base_url . '/' . $slug;
+        } else {
+            return $base_url . '/go/' . $slug;
+        }
     }
     
     /**

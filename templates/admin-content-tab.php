@@ -25,7 +25,10 @@
                     <div class="post-url"><?php echo get_permalink($post->ID); ?></div>
                 </td>
                 <td><?php echo get_the_date('', $post->ID); ?></td>
-                <td>
+        <tr data-post-id="<?php echo $post->ID; ?>" 
+            data-link-count="<?php echo $post->link_count; ?>"
+            data-title="<?php echo esc_attr(strtolower($post->post_title)); ?>"
+            data-content="<?php echo esc_attr(strtolower(wp_strip_all_tags($post->post_content))); ?>">
                     <?php if ($post->link_count > 0): ?>
                         <span class="nexus-link-count"><?php echo $post->link_count; ?> <?php _e('links', 'nexus-wp-link-shortener'); ?></span>
                     <?php else: ?>
@@ -33,9 +36,16 @@
                     <?php endif; ?>
                 </td>
                 <td>
-                    <button class="button nexus-instant-create" 
+                    <span class="nexus-link-count">
+                        <?php 
+                        printf(
+                            _n('%d link', '%d links', $post->link_count, 'nexus-wp-link-shortener'),
+                            $post->link_count
+                        ); 
+                        ?>
+                    </span>
                             data-post-id="<?php echo $post->ID; ?>" 
-                            data-post-type="<?php echo $post_type; ?>">
+                    <span class="nexus-no-links"><?php _e('No links', 'nexus-wp-link-shortener'); ?></span>
                         <?php _e('Instant Create + Copy', 'nexus-wp-link-shortener'); ?>
                     </button>
                     
@@ -45,15 +55,112 @@
                         <?php _e('Manage Links', 'nexus-wp-link-shortener'); ?>
                     </a>
                     <?php endif; ?>
+<!-- Search functionality -->
+<div class="nexus-search-container">
+    <input type="text" id="nexus-search" placeholder="<?php _e('Search content...', 'nexus-wp-link-shortener'); ?>" class="regular-text">
+    <button type="button" id="nexus-search-clear" class="button" style="display: none;"><?php _e('Clear', 'nexus-wp-link-shortener'); ?></button>
+</div>
+
                 </td>
             </tr>
             <?php endforeach; ?>
         </tbody>
     </table>
+
+<div id="nexus-no-results" style="display: none;" class="nexus-no-results">
+    <p><?php _e('No content found matching your search criteria.', 'nexus-wp-link-shortener'); ?></p>
+</div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('nexus-search');
+    const searchClear = document.getElementById('nexus-search-clear');
+    const tableBody = document.getElementById('nexus-content-table-body');
+    const noResults = document.getElementById('nexus-no-results');
+    const allRows = tableBody.querySelectorAll('tr[data-post-id]');
+    
+    function performSearch() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        let visibleCount = 0;
+        
+        if (searchTerm === '') {
+            // Show all rows
+            allRows.forEach(row => {
+                row.style.display = '';
+                visibleCount++;
+            });
+            searchClear.style.display = 'none';
+        } else {
+            // Filter rows
+            allRows.forEach(row => {
+                const title = row.dataset.title || '';
+                const content = row.dataset.content || '';
+                
+                if (title.includes(searchTerm) || content.includes(searchTerm)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            searchClear.style.display = 'inline-block';
+        }
+        
+        // Show/hide no results message
+        if (visibleCount === 0 && searchTerm !== '') {
+            noResults.style.display = 'block';
+            tableBody.parentElement.style.display = 'none';
+        } else {
+            noResults.style.display = 'none';
+            tableBody.parentElement.style.display = '';
+        }
+        
+        // Apply has-links filter if active
+        const hasLinksFilter = document.getElementById('has-links-filter');
+        if (hasLinksFilter && hasLinksFilter.checked) {
+            applyLinksFilter();
+        }
+    }
+    
+    function applyLinksFilter() {
+        const showOnlyWithLinks = document.getElementById('has-links-filter').checked;
+        const visibleRows = Array.from(allRows).filter(row => row.style.display !== 'none');
+        
+        visibleRows.forEach(row => {
+            const linkCount = parseInt(row.dataset.linkCount);
+            if (showOnlyWithLinks && linkCount === 0) {
+                row.style.display = 'none';
+            } else if (!showOnlyWithLinks) {
+                // Only show if it matches search criteria
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                if (searchTerm === '') {
+                    row.style.display = '';
+                } else {
+                    const title = row.dataset.title || '';
+                    const content = row.dataset.content || '';
+                    row.style.display = (title.includes(searchTerm) || content.includes(searchTerm)) ? '' : 'none';
+                }
+            }
+        });
+    }
+    
+    // Search event listeners
+    searchInput.addEventListener('input', performSearch);
+    searchInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Escape') {
+            this.value = '';
+            performSearch();
+        }
+    });
+    
+    searchClear.addEventListener('click', function() {
+        searchInput.value = '';
+        performSearch();
+        searchInput.focus();
+    });
+    
     // Instant create functionality
     document.querySelectorAll('.nexus-instant-create').forEach(button => {
         button.addEventListener('click', function() {
@@ -61,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const postType = this.dataset.postType;
             const originalText = this.textContent;
             
-            this.textContent = nexusLinks.strings.creating;
+    <tbody id="nexus-content-table-body">
             this.disabled = true;
             
             const formData = new FormData();
@@ -102,18 +209,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Filter functionality
-    document.getElementById('has-links-filter').addEventListener('change', function() {
-        const showOnlyWithLinks = this.checked;
-        const rows = document.querySelectorAll('tbody tr[data-post-id]');
-        
-        rows.forEach(row => {
-            const linkCount = parseInt(row.dataset.linkCount);
-            if (showOnlyWithLinks && linkCount === 0) {
-                row.style.display = 'none';
-            } else {
-                row.style.display = '';
-            }
-        });
-    });
+    document.getElementById('has-links-filter').addEventListener('change', applyLinksFilter);
 });
 </script>

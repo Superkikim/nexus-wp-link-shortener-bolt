@@ -103,7 +103,10 @@ class Nexus_WP_Link_Shortener {
             'forward_utm_params' => false,
             'allowed_roles' => array('administrator', 'editor'),
             'analytics_enabled' => true,
-            'bot_detection_enabled' => true
+            'bot_detection_enabled' => true,
+            'enabled_post_types' => array('post', 'page'),
+            'remove_www_prefix' => false,
+            'remove_go_segment' => false
         );
         
         foreach ($defaults as $key => $value) {

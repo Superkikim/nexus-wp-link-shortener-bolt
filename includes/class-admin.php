@@ -108,14 +108,15 @@ class Nexus_Links_Admin {
      * Get supported custom post types
      */
     private function get_supported_post_types() {
-        $cpts = get_post_types(array(
+        $enabled_post_types = get_option('nexus_links_enabled_post_types', array('post', 'page'));
+        $all_cpts = get_post_types(array(
             'public' => true,
             'show_ui' => true,
             '_builtin' => false
         ), 'names');
         
-        return array_filter($cpts, function($cpt) {
-            return $cpt !== 'attachment';
+        return array_filter($all_cpts, function($cpt) use ($enabled_post_types) {
+            return $cpt !== 'attachment' && in_array($cpt, $enabled_post_types);
         });
     }
     
@@ -360,11 +361,19 @@ class Nexus_Links_Admin {
             'forward_utm_params' => isset($_POST['forward_utm_params']),
             'analytics_enabled' => isset($_POST['analytics_enabled']),
             'bot_detection_enabled' => isset($_POST['bot_detection_enabled']),
-            'allowed_roles' => isset($_POST['allowed_roles']) ? $_POST['allowed_roles'] : array()
+            'allowed_roles' => isset($_POST['allowed_roles']) ? $_POST['allowed_roles'] : array(),
+            'enabled_post_types' => isset($_POST['enabled_post_types']) ? $_POST['enabled_post_types'] : array('post', 'page'),
+            'remove_www_prefix' => isset($_POST['remove_www_prefix']),
+            'remove_go_segment' => isset($_POST['remove_go_segment'])
         );
         
         foreach ($settings as $key => $value) {
             update_option('nexus_links_' . $key, $value);
+        }
+        
+        // If URL structure changed, flush rewrite rules
+        if (isset($_POST['remove_go_segment'])) {
+            update_option('nexus_links_flush_rewrite_rules', true);
         }
         
         add_action('admin_notices', function() {
