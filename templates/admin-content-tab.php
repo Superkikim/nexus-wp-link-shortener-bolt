@@ -1,5 +1,5 @@
 <div class="wrap">
-    <h1><?php echo esc_html($post_type_object->labels->name); ?> - <?php _e('Short Links', 'nexus-wp-link-shortener'); ?></h1>
+    <h1><?php echo esc_html($post_type_object->labels->name); ?> - <?php _e('Nexus Links', 'nexus-wp-link-shortener'); ?></h1>
     
     <!-- Search and Filter Controls -->
     <div class="nexus-controls-container">
@@ -28,7 +28,7 @@
             <tr>
                 <th><?php _e('Title', 'nexus-wp-link-shortener'); ?></th>
                 <th><?php _e('Date', 'nexus-wp-link-shortener'); ?></th>
-                <th><?php _e('Short Links', 'nexus-wp-link-shortener'); ?></th>
+                <th><?php _e('Nexus Links', 'nexus-wp-link-shortener'); ?></th>
                 <th><?php _e('Actions', 'nexus-wp-link-shortener'); ?></th>
             </tr>
         </thead>

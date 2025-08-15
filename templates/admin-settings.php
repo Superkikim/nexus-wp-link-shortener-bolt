@@ -1,5 +1,5 @@
 <div class="wrap">
-    <h1><?php _e('Link Shortener Settings', 'nexus-wp-link-shortener'); ?></h1>
+    <h1><?php _e('Nexus Links Settings', 'nexus-wp-link-shortener'); ?></h1>
     
     <form method="post" action="">
         <?php wp_nonce_field('nexus_links_save_settings', 'nexus_links_settings_nonce'); ?>
@@ -69,50 +69,6 @@
                     </label><br>
                     <?php endforeach; ?>
                     <p class="description"><?php _e('Select which user roles can create and manage short links.', 'nexus-wp-link-shortener'); ?></p>
-                </td>
-            </tr>
-            
-            <tr>
-                <th scope="row"><?php _e('Supported Content Types', 'nexus-wp-link-shortener'); ?></th>
-                <td>
-                    <?php
-                    $all_post_types = get_post_types(array('public' => true, 'show_ui' => true), 'objects');
-                    $enabled_post_types = get_option('nexus_links_enabled_post_types', array('post', 'page'));
-                    
-                    foreach ($all_post_types as $post_type):
-                        if ($post_type->name === 'attachment') continue;
-                    ?>
-                    <label>
-                        <input type="checkbox" name="enabled_post_types[]" value="<?php echo esc_attr($post_type->name); ?>" 
-                               <?php checked(in_array($post_type->name, $enabled_post_types)); ?>>
-                        <?php echo esc_html($post_type->labels->name); ?>
-                        <?php if (!$post_type->_builtin): ?>
-                            <em>(<?php _e('Custom Post Type', 'nexus-wp-link-shortener'); ?>)</em>
-                        <?php endif; ?>
-                    </label><br>
-                    <?php endforeach; ?>
-                    <p class="description"><?php _e('Select which content types should support short links. Popular extensions like WooCommerce Products, Events Calendar, and other custom post types can be enabled here.', 'nexus-wp-link-shortener'); ?></p>
-                </td>
-            </tr>
-            
-            <tr>
-                <th scope="row"><?php _e('Short Link Domain Settings', 'nexus-wp-link-shortener'); ?></th>
-                <td>
-                    <label>
-                        <input type="checkbox" name="remove_www_prefix" value="1" <?php checked(get_option('nexus_links_remove_www_prefix', false)); ?>>
-                        <?php _e('Remove "www" prefix from short links', 'nexus-wp-link-shortener'); ?>
-                    </label>
-                    <p class="description">
-                        <?php _e('⚠️ <strong>Important:</strong> Only enable this if your website works without the "www" prefix. Test thoroughly before enabling. This will generate shorter URLs like "domain.com/go/abc123" instead of "www.domain.com/go/abc123".', 'nexus-wp-link-shortener'); ?>
-                    </p>
-                    
-                    <label style="margin-top: 15px; display: block;">
-                        <input type="checkbox" name="remove_go_segment" value="1" <?php checked(get_option('nexus_links_remove_go_segment', false)); ?>>
-                        <?php _e('Remove "/go/" segment from URLs (Advanced)', 'nexus-wp-link-shortener'); ?>
-                    </label>
-                    <p class="description">
-                        <?php _e('⚠️ <strong>Advanced Option:</strong> This changes URLs from "domain.com/go/abc123" to "domain.com/abc123". This may conflict with existing pages or posts. Existing short links will continue to work, but new ones will use the shorter format.', 'nexus-wp-link-shortener'); ?>
-                    </p>
                 </td>
             </tr>
         </table>

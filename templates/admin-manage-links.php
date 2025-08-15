@@ -22,7 +22,7 @@
     
     <!-- Short Links Table -->
     <div class="nexus-links-header">
-        <h2><?php _e('Short Links', 'nexus-wp-link-shortener'); ?></h2>
+        <h2><?php _e('Nexus Links', 'nexus-wp-link-shortener'); ?></h2>
         <a href="<?php echo admin_url('admin.php?page=nexus-links-add-edit&post_id=' . $post->ID . '&post_type=' . $post_type); ?>" 
            class="button button-primary">
             <?php _e('Add New Link', 'nexus-wp-link-shortener'); ?>
@@ -31,7 +31,7 @@
     
     <?php if (empty($links)): ?>
         <div class="nexus-no-links">
-            <p><?php _e('No short links found for this content.', 'nexus-wp-link-shortener'); ?></p>
+            <p><?php _e('No nexus links found for this content.', 'nexus-wp-link-shortener'); ?></p>
             <a href="<?php echo admin_url('admin.php?page=nexus-links-add-edit&post_id=' . $post->ID . '&post_type=' . $post_type); ?>" 
                class="button button-primary">
                 <?php _e('Create Your First Link', 'nexus-wp-link-shortener'); ?>
@@ -41,7 +41,7 @@
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th><?php _e('Short URL', 'nexus-wp-link-shortener'); ?></th>
+                    <th><?php _e('Nexus URL', 'nexus-wp-link-shortener'); ?></th>
                     <th><?php _e('Name', 'nexus-wp-link-shortener'); ?></th>
                     <th><?php _e('Campaign', 'nexus-wp-link-shortener'); ?></th>
                     <th><?php _e('Status', 'nexus-wp-link-shortener'); ?></th>
@@ -54,8 +54,8 @@
                 <?php foreach ($links as $link): ?>
                 <tr>
                     <td>
-                        <strong><?php echo home_url('/go/' . $link->slug); ?></strong>
-                        <button class="button-link nexus-copy-button" data-url="<?php echo home_url('/go/' . $link->slug); ?>" title="<?php _e('Copy to clipboard', 'nexus-wp-link-shortener'); ?>">
+                        <strong><?php echo home_url('/' . $link->slug); ?></strong>
+                        <button class="button-link nexus-copy-button" data-url="<?php echo home_url('/' . $link->slug); ?>" title="<?php _e('Copy to clipboard', 'nexus-wp-link-shortener'); ?>">
                             <span class="dashicons dashicons-admin-page"></span>
                         </button>
                     </td>

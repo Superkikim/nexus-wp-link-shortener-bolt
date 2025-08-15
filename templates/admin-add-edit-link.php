@@ -1,9 +1,9 @@
 <div class="wrap">
     <h1>
         <?php if ($action === 'edit'): ?>
-            <?php _e('Edit Short Link', 'nexus-wp-link-shortener'); ?>
+            <?php _e('Edit Nexus Link', 'nexus-wp-link-shortener'); ?>
         <?php else: ?>
-            <?php _e('Add New Short Link', 'nexus-wp-link-shortener'); ?>
+            <?php _e('Add New Nexus Link', 'nexus-wp-link-shortener'); ?>
         <?php endif; ?>
         <span class="subtitle">- <?php echo esc_html($post->post_title); ?></span>
     </h1>
@@ -119,9 +119,9 @@
             
             <p class="submit">
                 <?php if ($action === 'edit'): ?>
-                    <?php submit_button(__('Update Link', 'nexus-wp-link-shortener'), 'primary', 'submit', false); ?>
+                    <?php submit_button(__('Update Nexus Link', 'nexus-wp-link-shortener'), 'primary', 'submit', false); ?>
                 <?php else: ?>
-                    <?php submit_button(__('Create Short Link', 'nexus-wp-link-shortener'), 'primary', 'submit', false); ?>
+                    <?php submit_button(__('Create Nexus Link', 'nexus-wp-link-shortener'), 'primary', 'submit', false); ?>
                 <?php endif; ?>
                 
                 <a href="<?php echo admin_url('admin.php?page=nexus-links-manage&post_id=' . $post->ID . '&post_type=' . $post_type); ?>" 

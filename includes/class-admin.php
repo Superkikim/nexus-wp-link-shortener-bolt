@@ -25,8 +25,8 @@ class Nexus_Links_Admin {
         $capability = 'edit_posts';
         
         add_menu_page(
-            __('Link Shortener', 'nexus-wp-link-shortener'),
-            __('Short Links', 'nexus-wp-link-shortener'),
+            __('Nexus Links', 'nexus-wp-link-shortener'),
+            __('Nexus Links', 'nexus-wp-link-shortener'),
             $capability,
             'nexus-links',
             array($this, 'dashboard_page'),
@@ -509,11 +509,6 @@ class Nexus_Links_Admin {
         
         foreach ($settings as $key => $value) {
             update_option('nexus_links_' . $key, $value);
-        }
-        
-        // If URL structure changed, flush rewrite rules
-        if (isset($_POST['remove_go_segment'])) {
-            update_option('nexus_links_flush_rewrite_rules', true);
         }
         
         add_action('admin_notices', function() {

@@ -1,5 +1,5 @@
 <div class="wrap">
-    <h1><?php _e('Link Shortener Dashboard', 'nexus-wp-link-shortener'); ?></h1>
+    <h1><?php _e('Nexus Links Dashboard', 'nexus-wp-link-shortener'); ?></h1>
     
     <div id="nexus-dashboard">
         <div class="nexus-stats-grid">
