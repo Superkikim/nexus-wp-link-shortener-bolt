@@ -287,11 +287,13 @@ class Nexus_Links_Admin {
      */
     public function ajax_remove_all_links() {
         if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
-            wp_die('Security check failed');
+            wp_send_json_error(__('Security check failed', 'nexus-wp-link-shortener'));
+            return;
         }
-        
+
         if (!current_user_can('manage_options')) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(__('Insufficient permissions', 'nexus-wp-link-shortener'));
+            return;
         }
         
         global $wpdb;
@@ -320,11 +322,13 @@ class Nexus_Links_Admin {
      */
     public function ajax_reset_all_data() {
         if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
-            wp_die('Security check failed');
+            wp_send_json_error(__('Security check failed', 'nexus-wp-link-shortener'));
+            return;
         }
-        
+
         if (!current_user_can('manage_options')) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(__('Insufficient permissions', 'nexus-wp-link-shortener'));
+            return;
         }
         
         global $wpdb;
@@ -472,11 +476,13 @@ class Nexus_Links_Admin {
      */
     public function ajax_create_custom_link() {
         if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
-            wp_die('Security check failed');
+            wp_send_json_error(__('Security check failed', 'nexus-wp-link-shortener'));
+            return;
         }
-        
+
         if (!current_user_can('edit_posts')) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(__('Insufficient permissions', 'nexus-wp-link-shortener'));
+            return;
         }
         
         $target_url = esc_url_raw($_POST['target_url']);
@@ -515,11 +521,13 @@ class Nexus_Links_Admin {
      */
     public function ajax_update_custom_link() {
         if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
-            wp_die('Security check failed');
+            wp_send_json_error(__('Security check failed', 'nexus-wp-link-shortener'));
+            return;
         }
-        
+
         if (!current_user_can('edit_posts')) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(__('Insufficient permissions', 'nexus-wp-link-shortener'));
+            return;
         }
         
         $link_id = intval($_POST['link_id']);
@@ -557,11 +565,13 @@ class Nexus_Links_Admin {
      */
     public function ajax_delete_custom_link() {
         if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
-            wp_die('Security check failed');
+            wp_send_json_error(__('Security check failed', 'nexus-wp-link-shortener'));
+            return;
         }
-        
+
         if (!current_user_can('edit_posts')) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(__('Insufficient permissions', 'nexus-wp-link-shortener'));
+            return;
         }
         
         $link_id = intval($_POST['link_id']);
@@ -591,11 +601,13 @@ class Nexus_Links_Admin {
      */
     public function ajax_create_instant_link() {
         if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
-            wp_die('Security check failed');
+            wp_send_json_error(__('Security check failed', 'nexus-wp-link-shortener'));
+            return;
         }
-        
+
         if (!current_user_can('edit_posts')) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(__('Insufficient permissions', 'nexus-wp-link-shortener'));
+            return;
         }
         
         $post_id = intval($_POST['post_id']);
@@ -629,13 +641,15 @@ class Nexus_Links_Admin {
     public function ajax_get_analytics() {
         // Handle both POST and GET requests for flexibility
         $nonce = isset($_POST['nonce']) ? $_POST['nonce'] : (isset($_GET['nonce']) ? $_GET['nonce'] : '');
-        
+
         if (!wp_verify_nonce($nonce, 'nexus_links_nonce')) {
-            wp_die('Security check failed');
+            wp_send_json_error(__('Security check failed', 'nexus-wp-link-shortener'));
+            return;
         }
-        
+
         if (!current_user_can('edit_posts')) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(__('Insufficient permissions', 'nexus-wp-link-shortener'));
+            return;
         }
         
         $date_range = isset($_POST['date_range']) ? sanitize_text_field($_POST['date_range']) : '30';
@@ -665,11 +679,13 @@ class Nexus_Links_Admin {
      */
     public function ajax_get_last_link_for_post() {
         if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
-            wp_die('Security check failed');
+            wp_send_json_error(__('Security check failed', 'nexus-wp-link-shortener'));
+            return;
         }
-        
+
         if (!current_user_can('edit_posts')) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(__('Insufficient permissions', 'nexus-wp-link-shortener'));
+            return;
         }
         
         $post_id = intval($_POST['post_id']);
@@ -708,11 +724,13 @@ class Nexus_Links_Admin {
      */
     public function ajax_get_last_link() {
         if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
-            wp_die('Security check failed');
+            wp_send_json_error(__('Security check failed', 'nexus-wp-link-shortener'));
+            return;
         }
-        
+
         if (!current_user_can('edit_posts')) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(__('Insufficient permissions', 'nexus-wp-link-shortener'));
+            return;
         }
         
         $post_type = sanitize_text_field($_POST['post_type']);
@@ -738,11 +756,13 @@ class Nexus_Links_Admin {
      */
     public function ajax_cleanup_analytics() {
         if (!wp_verify_nonce($_POST['nonce'], 'nexus_links_nonce')) {
-            wp_die('Security check failed');
+            wp_send_json_error(__('Security check failed', 'nexus-wp-link-shortener'));
+            return;
         }
-        
+
         if (!current_user_can('manage_options')) {
-            wp_die('Insufficient permissions');
+            wp_send_json_error(__('Insufficient permissions', 'nexus-wp-link-shortener'));
+            return;
         }
         
         $plugin = Nexus_WP_Link_Shortener::get_instance();
