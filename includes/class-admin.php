@@ -638,7 +638,7 @@ class Nexus_Links_Admin {
             wp_die('Insufficient permissions');
         }
         
-        $date_range = isset($_POST['date_range']) ? sanitize_text_field($_POST['date_range']) : 
+        $date_range = isset($_POST['date_range']) ? sanitize_text_field($_POST['date_range']) : '30';
         
         $analytics = new Nexus_Links_Analytics();
         $data = $analytics->get_dashboard_data($date_range);

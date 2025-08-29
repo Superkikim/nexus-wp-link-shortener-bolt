@@ -48,16 +48,16 @@ class Nexus_Links_Analytics {
      */
     private function get_device() {
         $user_agent = $this->get_user_agent();
-        if (!$user_agent) return 'Unknown';
-        
+        if (!$user_agent) return __('Unknown', 'nexus-wp-link-shortener');
+
         if (preg_match('/Mobile|Android|iPhone|iPad/', $user_agent)) {
             if (preg_match('/iPad/', $user_agent)) {
-                return 'Tablet';
+                return __('Tablet', 'nexus-wp-link-shortener');
             }
-            return 'Mobile';
+            return __('Mobile', 'nexus-wp-link-shortener');
         }
-        
-        return 'Desktop';
+
+        return __('Desktop', 'nexus-wp-link-shortener');
     }
     
     /**
@@ -65,8 +65,8 @@ class Nexus_Links_Analytics {
      */
     private function get_browser() {
         $user_agent = $this->get_user_agent();
-        if (!$user_agent) return 'Unknown';
-        
+        if (!$user_agent) return __('Unknown', 'nexus-wp-link-shortener');
+
         $browsers = array(
             'Chrome' => '/Chrome/i',
             'Firefox' => '/Firefox/i',
@@ -75,14 +75,14 @@ class Nexus_Links_Analytics {
             'Internet Explorer' => '/MSIE/i',
             'Opera' => '/Opera/i'
         );
-        
+
         foreach ($browsers as $browser => $pattern) {
             if (preg_match($pattern, $user_agent)) {
                 return $browser;
             }
         }
-        
-        return 'Other';
+
+        return __('Other', 'nexus-wp-link-shortener');
     }
     
     /**
@@ -90,8 +90,8 @@ class Nexus_Links_Analytics {
      */
     private function get_os() {
         $user_agent = $this->get_user_agent();
-        if (!$user_agent) return 'Unknown';
-        
+        if (!$user_agent) return __('Unknown', 'nexus-wp-link-shortener');
+
         $os_array = array(
             'Windows' => '/Windows/i',
             'Mac OS' => '/Mac/i',
@@ -99,14 +99,14 @@ class Nexus_Links_Analytics {
             'Android' => '/Android/i',
             'Linux' => '/Linux/i'
         );
-        
+
         foreach ($os_array as $os => $pattern) {
             if (preg_match($pattern, $user_agent)) {
                 return $os;
             }
         }
-        
-        return 'Other';
+
+        return __('Other', 'nexus-wp-link-shortener');
     }
     
     /**
