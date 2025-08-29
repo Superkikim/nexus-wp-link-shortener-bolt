@@ -5,11 +5,15 @@
 class Nexus_Links_Frontend {
     
     public function __construct() {
-        add_action('init', array($this, 'add_rewrite_rules'));
+        // Add rewrite rules early to ensure priority
+        add_action('init', array($this, 'add_rewrite_rules'), 1);
         add_action('template_redirect', array($this, 'handle_short_url'));
 
         // Debug: Log environment info
         add_action('init', array($this, 'debug_environment'), 999);
+
+        // Force rewrite rules refresh on plugin activation
+        register_activation_hook(NEXUS_LINKS_PLUGIN_FILE, array($this, 'force_rewrite_flush'));
     }
     
     /**
@@ -20,6 +24,9 @@ class Nexus_Links_Frontend {
         error_log('[Nexus Debug] Home URL: ' . home_url());
         error_log('[Nexus Debug] Site URL: ' . site_url());
 
+        // Add rewrite tag first
+        add_rewrite_tag('%nexus_short_link%', '([a-zA-Z0-9]{6})');
+
         // Direct slug routing - ensure it takes priority over other rules
         add_rewrite_rule(
             '^([a-zA-Z0-9]{6})/?$',
@@ -27,20 +34,40 @@ class Nexus_Links_Frontend {
             'top'
         );
 
-        add_rewrite_tag('%nexus_short_link%', '([a-zA-Z0-9]{6})');
-
         error_log('[Nexus Debug] Rewrite rules added');
 
-        // Flush rewrite rules if needed
+        // Force flush rewrite rules to ensure our rule is applied
+        $rules_version = get_option('nexus_links_rules_version', '0');
+        $current_version = '1.0.1'; // Increment this when rules change
+
+        if ($rules_version !== $current_version) {
+            error_log('[Nexus Debug] Rules version mismatch, forcing flush');
+            flush_rewrite_rules();
+            update_option('nexus_links_rules_version', $current_version);
+        }
+
+        // Also flush if the option is set
         if (get_option('nexus_links_flush_rewrite_rules', false)) {
-            error_log('[Nexus Debug] Flushing rewrite rules');
+            error_log('[Nexus Debug] Manual flush requested');
             flush_rewrite_rules();
             delete_option('nexus_links_flush_rewrite_rules');
         }
 
-        // Debug: Show current rewrite rules
+        // Debug: Check if our rule exists
         global $wp_rewrite;
-        error_log('[Nexus Debug] Current rewrite rules: ' . var_export($wp_rewrite->wp_rewrite_rules(), true));
+        $rules = $wp_rewrite->wp_rewrite_rules();
+        $our_rule_exists = isset($rules['^([a-zA-Z0-9]{6})/?$']);
+        error_log('[Nexus Debug] Our rewrite rule exists: ' . ($our_rule_exists ? 'YES' : 'NO'));
+
+        if (!$our_rule_exists) {
+            error_log('[Nexus Debug] Our rule missing! Forcing immediate flush...');
+            flush_rewrite_rules();
+
+            // Check again after flush
+            $rules = $wp_rewrite->wp_rewrite_rules();
+            $our_rule_exists = isset($rules['^([a-zA-Z0-9]{6})/?$']);
+            error_log('[Nexus Debug] Our rule exists after flush: ' . ($our_rule_exists ? 'YES' : 'NO'));
+        }
     }
     
     /**
@@ -182,5 +209,14 @@ class Nexus_Links_Frontend {
         error_log('[Nexus Debug] Total links in database: ' . $count);
 
         error_log('[Nexus Debug] === END ENVIRONMENT INFO ===');
+    }
+
+    /**
+     * Force rewrite rules flush
+     */
+    public function force_rewrite_flush() {
+        error_log('[Nexus Debug] force_rewrite_flush() called');
+        update_option('nexus_links_flush_rewrite_rules', true);
+        flush_rewrite_rules();
     }
 }
