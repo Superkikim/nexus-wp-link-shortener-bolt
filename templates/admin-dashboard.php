@@ -69,53 +69,63 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                console.debug('[Nexus Analytics] Data loaded successfully:', data.data);
                 updateDashboardStats(data.data);
                 updateClicksChart(data.data.clicks_by_day);
             } else {
-                console.error('Analytics loading failed:', data);
+                console.debug('[Nexus Analytics] Loading failed:', data);
                 showErrorState();
             }
         })
         .catch(error => {
-            console.error('Analytics loading error:', error);
+            console.debug('[Nexus Analytics] Loading error:', error);
             showErrorState();
         });
     }
     
     function updateDashboardStats(data) {
+        console.debug('[Nexus Analytics] Updating dashboard stats:', data);
+
         // Update stat numbers
         const totalClicks = document.getElementById('total-clicks');
         const uniqueClicks = document.getElementById('unique-clicks');
         const humanClicks = document.getElementById('human-clicks');
         const botClicks = document.getElementById('bot-clicks');
-        
+
         if (totalClicks) totalClicks.textContent = data.total_clicks || 0;
         if (uniqueClicks) uniqueClicks.textContent = data.unique_clicks || 0;
         if (humanClicks) humanClicks.textContent = data.human_clicks || 0;
         if (botClicks) botClicks.textContent = data.bot_clicks || 0;
-        
+
+        // Update referrers list
+        updateReferrersList(data.top_referrers);
     }
-    
+
     function updateReferrersList(referrers) {
+        console.debug('[Nexus Analytics] Updating referrers list:', referrers);
+
         const container = document.getElementById('referrers-list');
-        if (!container) return;
-        
+        if (!container) {
+            console.debug('[Nexus Analytics] Referrers container not found');
+            return;
+        }
+
         container.innerHTML = '';
-        
+
         if (referrers && referrers.length > 0) {
             const list = document.createElement('ul');
             referrers.forEach(function(referrer) {
-                let domain = referrer.referrer_domain || extractDomain(referrer.referrer) || 'Direct Traffic';
-                
+                let domain = referrer.referrer_domain || extractDomain(referrer.referrer) || '<?php _e('Direct Traffic', 'nexus-wp-link-shortener'); ?>';
+
                 // Handle null/empty referrers properly
                 if (domain === 'null' || domain === '' || !domain) {
-                    domain = 'Direct Traffic';
+                    domain = '<?php _e('Direct Traffic', 'nexus-wp-link-shortener'); ?>';
                 }
-                
+
                 const item = document.createElement('li');
-                item.innerHTML = 
+                item.innerHTML =
                     '<span><strong>' + domain + '</strong></span>' +
-                    '<span>' + referrer.clicks + ' clicks</span>';
+                    '<span>' + referrer.clicks + ' <?php _e('clicks', 'nexus-wp-link-shortener'); ?></span>';
                 list.appendChild(item);
             });
             container.appendChild(list);
@@ -123,32 +133,42 @@ document.addEventListener('DOMContentLoaded', function() {
             container.innerHTML = '<p><?php _e('No referrer data available for the selected period.', 'nexus-wp-link-shortener'); ?></p>';
         }
     }
-    
+
     function extractDomain(url) {
-     * Update clicks chart with simple bar visualization
+        if (!url || url === '') return '<?php _e('Direct Traffic', 'nexus-wp-link-shortener'); ?>';
+
+        try {
             const domain = new URL(url).hostname;
             return domain.replace('www.', '');
         } catch (e) {
+            console.debug('[Nexus Analytics] Error extracting domain from URL:', url, e);
+            return '<?php _e('Direct Traffic', 'nexus-wp-link-shortener'); ?>';
+        }
+    }
+
+    function updateClicksChart(clicksData) {
+        console.debug('[Nexus Analytics] Updating clicks chart:', clicksData);
+
         const placeholder = document.getElementById('clicks-chart-placeholder');
         const noDataDiv = document.getElementById('clicks-chart-no-data');
         const canvas = document.getElementById('clicks-chart');
-        
+
         if (!clicksData || clicksData.length === 0) {
             placeholder.style.display = 'none';
             noDataDiv.style.display = 'block';
             canvas.style.display = 'none';
             return;
         }
-        
+
         // Simple text-based chart for now
         placeholder.style.display = 'none';
         noDataDiv.style.display = 'none';
         canvas.style.display = 'none';
-        
+
         // Create simple chart container
         let chartHtml = '<div class="simple-chart">';
         const maxClicks = Math.max(...clicksData.map(d => parseInt(d.clicks)));
-        
+
         clicksData.slice(-7).forEach(function(day) { // Show last 7 days
             const percentage = maxClicks > 0 ? (parseInt(day.clicks) / maxClicks) * 100 : 0;
             chartHtml += `
@@ -161,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         });
         chartHtml += '</div>';
-        
+
         const container = document.getElementById('clicks-chart-container');
         const existingChart = container.querySelector('.simple-chart');
         if (existingChart) {
@@ -169,18 +189,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         container.insertAdjacentHTML('beforeend', chartHtml);
     }
-    
+
     function formatDate(dateString) {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
-    
-        if (!url || url === '') return 'Direct Traffic';
+
     function showErrorState() {
-        document.getElementById('clicks-chart-placeholder').innerHTML = 
-            '<p style="color: #d63638;"><?php _e('Error loading analytics data. Please refresh the page.', 'nexus-wp-link-shortener'); ?></p>';
-        
-            return 'Direct Traffic';
-            '<p style="color: #d63638;"><?php _e('Error loading referrer data.', 'nexus-wp-link-shortener'); ?></p>';
+        console.debug('[Nexus Analytics] Showing error state');
+
+        const placeholder = document.getElementById('clicks-chart-placeholder');
+        if (placeholder) {
+            placeholder.innerHTML =
+                '<p style="color: #d63638;"><?php _e('Error loading analytics data. Please refresh the page.', 'nexus-wp-link-shortener'); ?></p>';
+        }
+
+        const referrersContainer = document.getElementById('referrers-list');
+        if (referrersContainer) {
+            referrersContainer.innerHTML =
+                '<p style="color: #d63638;"><?php _e('Error loading referrer data.', 'nexus-wp-link-shortener'); ?></p>';
+        }
     }
 });

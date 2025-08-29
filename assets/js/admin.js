@@ -27,7 +27,7 @@
                         button.text(originalText);
                     }, 2000);
                 }).catch(function(err) {
-                    console.error('Could not copy text: ', err);
+                    console.debug('[Nexus Links] Could not copy text: ', err);
                     fallbackCopyToClipboard(url, button, originalText);
                 });
             } else {
@@ -75,11 +75,11 @@
             if (data.success) {
                 updateDashboardStats(data.data);
             } else {
-                console.error('Analytics loading failed:', data);
+                console.debug('[Nexus Analytics] Loading failed:', data);
             }
         })
         .catch(error => {
-            console.error('Analytics loading error:', error);
+            console.debug('[Nexus Analytics] Loading error:', error);
         });
     }
     
@@ -132,7 +132,7 @@
      */
     function updateClicksChart(clicksData) {
         // This would integrate with Chart.js or similar library
-        console.log('Clicks data:', clicksData);
+        console.debug('[Nexus Analytics] Clicks data:', clicksData);
     }
     
     /**
@@ -168,7 +168,7 @@
             }
         })
         .catch(error => {
-            console.error('Cleanup error:', error);
+            console.debug('[Nexus Analytics] Cleanup error:', error);
             alert(nexusLinks.strings.error || 'Error occurred during cleanup.');
         });
     }
@@ -204,10 +204,10 @@
                     button.text(originalText);
                 }, 2000);
             } else {
-                console.error('Fallback: Could not copy text');
+                console.debug('[Nexus Links] Fallback: Could not copy text');
             }
         } catch (err) {
-            console.error('Fallback: Could not copy text: ', err);
+            console.debug('[Nexus Links] Fallback: Could not copy text: ', err);
         }
         
         document.body.removeChild(textArea);
