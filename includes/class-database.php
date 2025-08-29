@@ -110,13 +110,28 @@ class Nexus_Links_Database {
      */
     public static function get_link_by_slug($slug) {
         global $wpdb;
-        
+
         $table = $wpdb->prefix . 'nexus_links';
-        
-        return $wpdb->get_row($wpdb->prepare(
+
+        error_log('[Nexus Debug] get_link_by_slug() called with slug: ' . $slug);
+        error_log('[Nexus Debug] Table name: ' . $table);
+
+        $query = $wpdb->prepare(
             "SELECT * FROM $table WHERE slug = %s AND active = 1",
             $slug
-        ));
+        );
+
+        error_log('[Nexus Debug] SQL Query: ' . $query);
+
+        $result = $wpdb->get_row($query);
+
+        error_log('[Nexus Debug] Query result: ' . var_export($result, true));
+
+        if ($wpdb->last_error) {
+            error_log('[Nexus Debug] Database error: ' . $wpdb->last_error);
+        }
+
+        return $result;
     }
     
     /**
