@@ -53,7 +53,12 @@ class Nexus_Links_Frontend {
         error_log('[Nexus Debug] handle_short_url() called');
         error_log('[Nexus Debug] Request URI: ' . $_SERVER['REQUEST_URI']);
         error_log('[Nexus Debug] Query var nexus_short_link: ' . var_export($slug, true));
-        error_log('[Nexus Debug] All query vars: ' . var_export(get_query_var(), true));
+
+        // Debug: Log all available query vars
+        global $wp_query;
+        if (isset($wp_query->query_vars)) {
+            error_log('[Nexus Debug] All query vars: ' . var_export($wp_query->query_vars, true));
+        }
 
         if (!$slug) {
             error_log('[Nexus Debug] No slug found, returning early');
