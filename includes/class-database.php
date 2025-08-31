@@ -113,22 +113,22 @@ class Nexus_Links_Database {
 
         $table = $wpdb->prefix . 'nexus_links';
 
-        error_log('[Nexus Debug] get_link_by_slug() called with slug: ' . $slug);
-        error_log('[Nexus Debug] Table name: ' . $table);
+        error_log('[Nexus Links Debug]: get_link_by_slug() called with slug: ' . $slug);
+        error_log('[Nexus Links Debug]: Table name: ' . $table);
 
         $query = $wpdb->prepare(
             "SELECT * FROM $table WHERE slug = %s AND active = 1",
             $slug
         );
 
-        error_log('[Nexus Debug] SQL Query: ' . $query);
+        error_log('[Nexus Links Debug]: SQL Query: ' . $query);
 
         $result = $wpdb->get_row($query);
 
-        error_log('[Nexus Debug] Query result: ' . var_export($result, true));
+        error_log('[Nexus Links Debug]: Query result: ' . var_export($result, true));
 
         if ($wpdb->last_error) {
-            error_log('[Nexus Debug] Database error: ' . $wpdb->last_error);
+            error_log('[Nexus Links Debug]: Database error: ' . $wpdb->last_error);
         }
 
         return $result;
